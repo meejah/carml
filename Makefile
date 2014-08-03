@@ -2,7 +2,9 @@
 
 venv:
 	virtualenv venv
-	./venv/bin/pip install -r requirements.txt
+	./venv/bin/pip install peep
+	./venv/bin/peep install -r requirements.txt
+	./venv/bin/pip install --editable .
 
 doc:
 	cd doc && make html

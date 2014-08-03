@@ -1,11 +1,17 @@
 Installing carml
 ----------------
 
-The only supported way to install this currently is via ``pip``::
+Currently, you can only install from source (pip will come
+soon!). From a fresh clone (``git clone
+https://github.com/meejah/carml.git``) type ``make venv``. Then
+activate your new virtualenv with ``source ./venv/bin/activate`` and
+then ``pip install --editable .`` which should install all the
+dependencies (listed in ``requirements.txt``).
 
-   pip install carml
+Note you'll need to install ``libffi`` development libraries, which is
+``apt-get install libffi-dev`` on Debian.
 
-This will install the dependencies, which are:
+The main dependencies are:
 
  * `txtorcon <https://txtorcon.readthedocs.org>`_
  * `humanize <https://github.com/jmoiron/humanize>`_
