@@ -4,7 +4,7 @@ import shutil
 import re
 from setuptools import setup
 
-__version__ = '0.0.1'
+__version__ = '0.0.3'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/carml'
@@ -60,5 +60,7 @@ setup(name = 'carml',
       data_files=[('keys', ['carml/keys/torproject.pem',
                             'carml/keys/digicert-sha2.pem',
                             'carml/keys/digicert-root-ca.pem']),
-                  ]
-      )
+                  ('share/carml', ['README.rst', 'meejah.asc']),
+                  ('doc/', ['doc/' + x for x in filter(lambda x: x.endswith('.rst'), os.listdir('doc'))]),
+              ]
+  )
