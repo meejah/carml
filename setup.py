@@ -2,9 +2,9 @@ import sys
 import os
 import shutil
 import re
-from setuptools import setup
+from setuptools import setup, find_packages
 
-__version__ = '0.0.1'
+__version__ = '0.0.6'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/carml'
@@ -55,10 +55,16 @@ setup(name = 'carml',
       author_email = __contact__,
       url = __url__,
       license = __license__,
-      packages  = ["carml"],
-      scripts = ['bin/carml'],
-      data_files=[('keys', ['carml/keys/torproject.pem',
-                            'carml/keys/digicert-sha2.pem',
-                            'carml/keys/digicert-root-ca.pem']),
-                  ]
-      )
+      packages = find_packages(),
+      entry_points={
+          'console_scripts': [
+              'carml = carml.dispatch:dispatch'
+          ]
+      },
+      include_package_data = True,
+      package_data={'': ['*.asc', '*.pem']},
+      data_files=[('share/carml', ['README.rst', 'meejah.asc']),
+                  ('share/carml/doc/', ['doc/' + x for x in filter(lambda x: x.endswith('.rst'), os.listdir('doc'))]),
+                  ('share/carml/example_extension/carml/command', ['example_extension/carml/command/blam.py']),
+              ]
+  )

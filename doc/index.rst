@@ -78,7 +78,7 @@ Some Quick Examples
     Descriptor uploaded; hidden-service should be reachable.
     Mon Jul 21 13:54:38 2014: Serving request to User-Agent "curl/7.37.0".
     Shutting down.
-    (venv)mike@machine:~$ carml downloadbundle --extract
+    (venv)meejah@machine:~$ carml downloadbundle --extract
     Getting recommended versions from "https://check.torproject.org/RecommendedTBBVersions".
        3.6.3-Linux, 3.6.3-MacOS, 3.6.3-Windows
     tor-browser-linux64-3.6.3_en-US.tar.xz.asc: already exists, so not downloading.

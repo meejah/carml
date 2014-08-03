@@ -140,10 +140,13 @@ def setup_failed(e, debug):
     reactor.callLater(0, reactor.stop)
 
 
-def dispatch(args):
+def dispatch(args=None):
     """
     this is the main program; see __main__.py
     """
+
+    if args is None:
+        args = sys.argv
 
     global _log_observer
     options = Options()

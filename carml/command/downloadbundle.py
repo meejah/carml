@@ -435,6 +435,9 @@ def verify_signature(fname, system_gpg=False):
                 if k.endswith('.asc'):
                     keys.append(pkg_resources.resource_filename('carml', os.path.join('keys', k)))
 
+            if len(keys) == 0:
+                raise RuntimeError('Internal error: failed to find shipped keys.')
+
             try:
                 if subprocess.check_call(['gpg', '--quiet', '--homedir', td, '--import'] + keys):
                     raise RuntimeError("Key import failed.")
