@@ -1,0 +1,49 @@
+# supports "peep"; see https://github.com/erikrose/peep
+# to use:
+#    virtualenv venv
+#    ./venv/bin/pip install peep
+#    ./venv/bin/peep install -r requirements.txt
+#
+# the txtorcon hashes are from original files I personally produced.
+# the others, I downloaded from 3 different network perspectives and
+# verified the same hashes. so take those with salt.
+# "peep hash <file>" will produce a hash for you.
+
+# sha256: 5Rv5lWUR5YaTgB_IiVybQBI2O_nwvKLzwndxELP_aLw
+humanize==0.5
+# sha256: dmRTC7mS44R7YeOqsVgLTfntAMWJjoAZSpkzvJyAlQo
+ansicolors==1.0.2
+
+# this is the hash for the .tar.gz file:
+# sha256: On8IJr6K3Yfkn4bQ19Y9el3WE-Tcj3y6WfEABsUohgY
+# this is the hash for the .whl file (usually the winner):
+# sha256: kQ_zIWA13gp3nPwWfAVFJm_x8maHsWP8RlXymKylLXQ
+txtorcon==0.10.0
+
+# sha256: GnyEcWu9mYGRW2SoHYo_B2pZNKjI30IkZVRps1ZJQMw
+zope.interface==4.0.5
+
+# sha256: qZ245ZwSATitinLuztzCS0UQ0u7TzkghO34y8izE7m4
+pyOpenSSL==0.14
+
+# sha256: Rw6uQ8aeyM0d-QsJEK8Wb2FnDOvQcIwWkvGaHBSHFIQ
+service_identity
+
+# sha256: Xvgd5EyHqHd5cQy7R2_77IakpsC9Klvr7Mw7-zw0eOU
+cryptography==0.4
+
+# sha256: M4j8GiynpdQmG00ePYtzQsv0vxz7NwIxHGCTIUMs7Xg
+six==1.7.3
+
+# sha256: gZI5NkD3vDBM6CZps165BZJWajCru0kkRW9SB5r8GOI
+cffi==0.8.2
+
+# sha256: lX2YtmHAtktYCrb5SxJeCbZxQVTuUd5AvKFtPwB2uGw
+pycparser==2.10
+
+# sha256: vf2WGsIhb1xlsH8sOl5RFvZxO4wc8HbEABDGSBDSaWM
+Twisted==14.0.0
+
+# sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
+pyasn1==0.1.7
+
