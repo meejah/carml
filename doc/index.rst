@@ -28,6 +28,8 @@ carml
 It is written in Python and uses Tor's control-port via the `txtorcon
 library <https://txtorcon.readthedocs.org>`_.
 
+**Documentation at `carml.rtfd.org <https://carml.readthedocs.org/en/latest/>`_.**
+
 In some ways, ``carml`` started as a dumping-ground for things I
 happened to make Tor do at least once from Python code. Are there
 things you wish you could easily make Tor do from the command-line?
@@ -99,6 +101,13 @@ Some Quick Examples
     Tor Browser Bundle downloaded and extracted.
     To run:
        ./tor-browser_en-US/start-tor-browser
+
+
+License
+-------
+
+``carml`` is public domain. See ``unlicense.org
+<http://unlicense.org/>`_ for more information.
 
 .. toctree::
    :maxdepth: 2

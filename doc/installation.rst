@@ -1,15 +1,51 @@
 Installing carml
 ----------------
 
-Currently, you can only install from source (pip will come
-soon!). From a fresh clone (``git clone
-https://github.com/meejah/carml.git``) type ``make venv``. Then
-activate your new virtualenv with ``source ./venv/bin/activate`` and
-then ``pip install --editable .`` which should install all the
-dependencies (listed in ``requirements.txt``).
+Note (for PyPI or development installs) you'll need to install
+``libffi`` development libraries. How to do this on various
+architectures (please send missing ones!):
 
-Note you'll need to install ``libffi`` development libraries, which is
-``apt-get install libffi-dev`` on Debian.
+ * Debian + Ubuntu: ``apt-get install libffi-dev``.
+
+
+PyPI
+====
+
+Once you have ``libffi`` installed as above, you should be able to do
+a simple ``pip install carml``. It's also possible to point to the
+``.whl`` file (after signature verification).
+
+To try without affecting system packages:
+
+.. sourcecode:: shell-session
+
+    virtualenv venv
+    . ./venv/bin/activate
+    pip install carml
+
+To use ``peep`` to verify upstream libraries against my copies, you'll
+have to clone the source; see below.
+
+
+Development/Source
+==================
+
+From a fresh clone (``git clone https://github.com/meejah/carml.git``)
+type ``make venv``. Then activate your new virtualenv with ``source
+./venv/bin/activate`` and then ``pip install --editable .`` which
+should install all the dependencies (listed in ``requirements.txt``).
+
+To do this and use ``peep``, do something like this (from the root of
+a fresh clone):
+
+.. sourcecode:: shell-session
+
+   virtualenv venv
+   . ./venv/bin/activate
+   pip install peep
+   peep install -r requirements.txt
+   pip install --editable .
+
 
 The main dependencies are:
 

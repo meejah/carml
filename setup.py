@@ -8,7 +8,7 @@ __version__ = '0.0.1'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/carml'
-__license__ = 'MIT'
+__license__ = 'Public Domain (http://unlicense.org/)'
 __copyright__ = 'Copyright 2014'
 
 def pip_to_requirements(s):
@@ -22,7 +22,6 @@ def pip_to_requirements(s):
     if m:
         return '%s (%s)' % (m.group(1), m.group(2))
     return s.strip()
-
 
 setup(name = 'carml',
       version = __version__,
@@ -39,7 +38,7 @@ setup(name = 'carml',
                      'Development Status :: 2 - Pre-Alpha',
                      'Environment :: Console',
                      'Intended Audience :: Developers',
-                     'License :: OSI Approved :: MIT License',
+                     'License :: Public Domain',
                      'Natural Language :: English',
                      'Operating System :: POSIX :: Linux',
                      'Operating System :: Unix',

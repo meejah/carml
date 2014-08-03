@@ -1,4 +1,5 @@
 .PHONY: doc certs
+VERSION = 0.0.1
 
 venv:
 	virtualenv venv
@@ -8,6 +9,25 @@ venv:
 
 doc:
 	cd doc && make html
+
+release: dist dist-sigs
+release-upload:
+	twine upload -r pypi -c "carml v${VERSION} tarball" dist/carml-${VERSION}.tar.gz dist/carml-${VERSION}.tar.gz.asc
+	twine upload -r pypi -c "carml v${VERSION} wheel" dist/carml-${VERSION}-py2-none-any.whl dist/carml-${VERSION}-py2-none-any.whl.asc
+
+dist: dist/carml-${VERSION}-py2-none-any.whl dist/carml-${VERSION}.tar.gz
+dist-sigs: dist/carml-${VERSION}-py2-none-any.whl.asc dist/carml-${VERSION}.tar.gz.asc
+
+dist/carml-${VERSION}-py2-none-any.whl:
+	python setup.py bdist_wheel
+dist/carml-${VERSION}-py2-none-any.whl.asc: dist/carml-${VERSION}-py2-none-any.whl
+	gpg --verify dist/carml-${VERSION}-py2-none-any.whl.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/carml-${VERSION}-py2-none-any.whl
+
+sdist: setup.py 
+	python setup.py sdist
+dist/carml-${VERSION}.tar.gz: sdist
+dist/carml-${VERSION}.tar.gz.asc: dist/carml-${VERSION}.tar.gz
+	gpg --verify dist/carml-${VERSION}.tar.gz.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/carml-${VERSION}.tar.gz
 
 pep8:
 	pep8 --ignore E501 carml/*.py carml/command/*.py
