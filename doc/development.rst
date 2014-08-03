@@ -13,9 +13,8 @@ to your own path, and replace "blam" with your command name.
 
 Some notes:
 
- * you are responsible for ensuring ``reactor.stop()`` gets called if you
-   want your command to exit.
- * alternatively, if "run()" returns a Deferred, that Deferred doing
-   errback or callback causes the process to exit.
+ * "run()" should return a Deferred. Doing errback or callback on it
+   causes the process to exit. (See ``monitor.py`` for an example of
+   how to exit or not depending on options).
  * if your command doesn't show up, make sure that ``python
    path/to/blam.py`` or whatever runs without errors (e.g. syntax etc)
