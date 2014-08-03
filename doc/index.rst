@@ -28,7 +28,7 @@ carml
 It is written in Python and uses Tor's control-port via the `txtorcon
 library <https://txtorcon.readthedocs.org>`_.
 
-**Documentation at `carml.rtfd.org <https://carml.readthedocs.org/en/latest/>`_ **
+**Documentation at:** `carml.rtfd.org <https://carml.readthedocs.org/en/latest/>`_
 
 In some ways, ``carml`` started as a dumping-ground for things I
 happened to make Tor do at least once from Python code. Are there
@@ -106,7 +106,7 @@ Some Quick Examples
 License
 -------
 
-``carml`` is public domain. See ``unlicense.org
+``carml`` is public domain. See `unlicense.org
 <http://unlicense.org/>`_ for more information.
 
 .. toctree::
