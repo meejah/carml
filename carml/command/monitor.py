@@ -232,7 +232,9 @@ def monitor_callback(options, state):
         def stop_reactor(arg):
             print("Tor disconnected.")
             all_done.callback(None)
-        state.protocol.on_disconnect.addBoth(stop_reactor)
+        def error(fail):
+            print(colors.red('Error:'), fail.getErrorMessage())
+        state.protocol.on_disconnect.addErrback(error).addBoth(stop_reactor)
 
     else:
         all_done.callback(None)
