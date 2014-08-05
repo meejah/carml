@@ -12,7 +12,7 @@ import humanize
 import txtorcon
 
 from carml.interface import ICarmlCommand
-from carml.util import dump_circuits, format_net_location, nice_router_name, colors
+from carml.util import dump_circuits, format_net_location, nice_router_name, colors, wrap
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
 
@@ -117,8 +117,9 @@ def flags(d):
 
 
 class CircuitLogger(txtorcon.CircuitListenerMixin):
-    def __init__(self, state):
+    def __init__(self, state, show_flags=False):
         self.state = state
+        self.show_flags = show_flags
 
     def circuit_launched(self, circuit):
         print(string_for_circuit(self.state, circuit))
@@ -128,6 +129,10 @@ class CircuitLogger(txtorcon.CircuitListenerMixin):
 
     def circuit_built(self, circuit):
         print(string_for_circuit(self.state, circuit))
+        if self.show_flags:
+            flagslist = ['%s=%s' % x for x in circuit.flags.items()]
+            flags = wrap(' '.join(flagslist), 72, '    ')
+            print(colors.cyan('    Flags:'), flags.lstrip())
 
     def circuit_failed(self, circuit, **kw):
         print('Circuit %d failed (%s).' % (circuit.id, flags(kw)))
@@ -187,7 +192,7 @@ def monitor_callback(options, state):
             dump_circuits(state, verbose=options['verbose'])
         else:
             print("No circuits.")
-        state.add_circuit_listener(CircuitLogger(state))
+        state.add_circuit_listener(CircuitLogger(state, show_flags=options['verbose']))
 
     if not options['no-guards']:
         if len(state.entry_guards):
