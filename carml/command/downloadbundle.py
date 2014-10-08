@@ -307,7 +307,7 @@ class DownloadBundleCommand(object):
             except ImportError:
                 raise RuntimeError('You need "txsocksx" installed to download via Tor.')
 
-        uri = 'https://check.torproject.org/RecommendedTBBVersions'
+        uri = 'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
         data = StringIO()
         print('Getting recommended versions from "%s".' % uri)
         d = download(agent, uri, data)
