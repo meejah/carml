@@ -3,6 +3,7 @@ from __future__ import print_function
 import sys
 import datetime
 import functools
+import random
 
 from twisted.python import usage, log
 from twisted.internet import defer, reactor
@@ -141,8 +142,14 @@ def build_circuit(proto, routers):
         routers = None
         # print("Building new circuit, letting Tor select the path.")
     else:
-        def find_router(name):
-            r = state.routers.get(name)
+        def find_router(args):
+            position, name = args
+            if name == '*':
+                if position == 0:
+                    return random.choice(state.entry_guards.values())
+                else:
+                    return random.choice(state.routers.values())
+            r = state.routers.get(name) or state.routers.get('$'+name)
             if r is None:
                 if len(name) == 40:
                     print("Couldn't look up %s, but it looks like an ID" % name)
@@ -150,8 +157,8 @@ def build_circuit(proto, routers):
                 else:
                     raise RuntimeError('Couldn\'t find router "%s".' % name)
             return r
-        routers = map(find_router, routers)
-        print("Building circuit: %s", routers)
+        routers = map(find_router, enumerate(routers))
+        print("Building circuit:", '->'.join(map(str, routers)))
 
     try:
         circ = yield state.build_circuit(routers)
