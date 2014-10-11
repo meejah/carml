@@ -158,7 +158,7 @@ def build_circuit(proto, routers):
                     raise RuntimeError('Couldn\'t find router "%s".' % name)
             return r
         routers = map(find_router, enumerate(routers))
-        print("Building circuit:", '->'.join(map(str, routers)))
+        print("Building circuit:", '->'.join(map(util.nice_router_name, routers)))
 
     try:
         circ = yield state.build_circuit(routers)
