@@ -76,7 +76,7 @@ def attach_streams_to_circuit(circid, state):
     circ = state.circuits[circid]
     print("Exiting (e.g. Ctrl-C) will cause Tor to resume choosing circuits.")
     print("Attaching all new streams to Circuit %d." % circ.id)
-    print("   ", '->'.join([p.name if p.name_is_unique else ('{%s}' % p.name) for p in circ.path]))
+    print("   ", '->'.join([p.name if p.name_is_unique else ('~%s' % p.name) for p in circ.path]))
 
     class Attacher(object):
         zope.interface.implements(txtorcon.IStreamAttacher)
@@ -100,7 +100,8 @@ def list_streams(state, verbose):
                               FAILED=util.colors.red)
         if state in state_to_color:
             state = state_to_color[state](state)
-        print("  %d: %s on circuit %d (%s)" % (stream.id, state, stream.circuit.id, flags))
+        print("  %d: %s on circuit %d (%s)" % (stream.id, state, stream.circuit.id,
+                                               flags))
         if verbose:
             h = stream.target_addr if stream.target_addr else stream.target_host
             source = txtorcon.util.process_from_address(stream.source_addr, stream.source_port)

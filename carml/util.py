@@ -122,7 +122,7 @@ def nice_router_name(router, color=True):
     return italic('~%s' % router.name)
 
 
-def dump_circuits(state, verbose):
+def dump_circuits(state, verbose, show_countries=False):
     print('  %-4s | %-5s | %-42s | %-8s | %-12s' % ('ID', 'Age', 'Path (router names, ~ means no Named flag)', 'State', 'Purpose'))
     print(' ------+-------+' + ('-'*44) + '+' + (10*'-') + '+' + (12*'-'))
     circuits = state.circuits.values()
@@ -148,7 +148,9 @@ def dump_circuits(state, verbose):
 
         # path is already padded to 42 chars, as it contains ANSI controls
         print(colors.bold('  %4d | %5s | %s | %-8s | %-12s' % (circ.id, age, path, circ.state, circ.purpose)))
-#        print str(circ.flags)
+        #print str(circ.flags)
+        if show_countries:
+            print(' '*17, '->'.join(map(lambda x: x.location.countrycode, circ.path)))
         if verbose:
             padding = ' ' * 17
             print(' ' * 8, ', '.join([(str(k) + '=' + str(v)) for (k, v) in circ.flags.items()]))
