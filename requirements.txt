@@ -20,14 +20,21 @@ ansicolors==1.0.2
 # sha256: M_BFIzKbFKzLIFS4HF2oh8KLQCx5e6iV3B7liCThB_E
 txtorcon==0.10.1
 
+# should be 1.13.0.3 but distutils doesn't like that?!
+# sha256: 3xqecGLH42k8OZU3BbdeD-t7h0agUTX_srjNmHCMnEM
+txsocksx>=1.13.0
+
+# sha256: usWK7I05rD0iJQhA-ySDDQ5KDvBa2PPwkXLcDMgM28o
+backports.lzma==0.0.3
+
 # sha256: GnyEcWu9mYGRW2SoHYo_B2pZNKjI30IkZVRps1ZJQMw
 zope.interface==4.0.5
 
 # sha256: qZ245ZwSATitinLuztzCS0UQ0u7TzkghO34y8izE7m4
 pyOpenSSL==0.14
 
-# sha256: Rw6uQ8aeyM0d-QsJEK8Wb2FnDOvQcIwWkvGaHBSHFIQ
-service_identity
+# sha256: xOCXlMVCKaTSv2p4QTCIAlnwsIcNL0DpcS3EEU8GeVw
+service_identity==14.0.0
 
 # sha256: Xvgd5EyHqHd5cQy7R2_77IakpsC9Klvr7Mw7-zw0eOU
 cryptography==0.4
@@ -45,11 +52,11 @@ pycparser==2.10
 Twisted==14.0.0
 
 # sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
-pyasn1==0.1.7
+#pyasn1==0.1.7
 
 ## FIXME haven't looked at these (not sure why they're required)
 # sha256: 4mlkBKdFCS6SWgBnuxIj1O5aYqftkX4SBIH1377p-_I
-characteristic==0.1.0
+#characteristic==0.1.0
 
 # sha256: vmXwDtKOMHVvHvOTd8s4JICiNoaZF51kaoTXn-k0mUE
-pyasn1_modules==0.0.5
+#pyasn1_modules==0.0.5
