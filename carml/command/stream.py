@@ -85,10 +85,15 @@ def attach_streams_to_circuit(circid, state):
             if stream.state == 'NEWRESOLVE':
                 print("  attaching %d (resolve %s)" % (stream.id, stream.target_host))
             else:
-                print("  attaching %d %s:%d" % (stream.id, stream.target_host, stream.target_port))
+                print("  attaching %d %s:%d" % (stream.id, stream.target_host,
+                                                stream.target_port))
             return circ
 
     state.set_attacher(Attacher(), reactor)
+    # FIXME doesn't exit on control-c? :(
+    d = defer.Deferred()
+    d.addBoth(lambda x: print('foo', x))
+    return d
 
 
 def list_streams(state, verbose):
