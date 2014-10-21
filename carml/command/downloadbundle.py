@@ -202,6 +202,11 @@ class ResponseReceiver(Protocol):
 @defer.inlineCallbacks
 def download(agent, uri, filelike):
     resp = yield agent.request('GET', uri)
+    while resp.code == 302:
+        newloc = resp.headers.getRawHeaders('location')[0]
+        print("Following 302:", newloc)
+        resp = yield agent.request('GET', newloc)
+
     if resp.code != 200:
         raise RuntimeError('Failed to download "%s": %d' % (uri, resp.code))
     done = defer.Deferred()
