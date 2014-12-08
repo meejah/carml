@@ -50,9 +50,9 @@ class SpeexChatOptions(usage.Options):
     ]
 
 
-class PassThroughProtocol(Protocol):
+class CrossConnectProtocol(Protocol):
     def __init__(self, other):
-        print("PassThroughProtocol()")
+        print("CrossConnectProtocol()")
         self.other = other
 
     def connectionMade(self):
@@ -69,8 +69,8 @@ class PassThroughProtocol(Protocol):
             self.other.transport.loseConnection()
 
 
-class PassThroughProtocolFactory(Factory):
-    protocol = PassThroughProtocol
+class CrossConnectProtocolFactory(Factory):
+    protocol = CrossConnectProtocol
     def __init__(self, other):
         self.other = other
 
@@ -104,21 +104,52 @@ class SpeexChatCommand(object):
     def run(self, options, mainoptions, state):
         "ICarmlCommand API"
 
+        import gst
+
+        if True:
+            audiodev = 'plughw:CARD=B20,DEV=0'
+            src = 'alsasrc device="%s"' % audiodev
+            outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=5000'
+            incoming = 'tcpserversrc host=localhost port=5001 ! queue ! decodebin ! audioconvert ! autoaudiosink'
+
+            inpipe = gst.parse_launch(incoming)
+#            pipeline = gst.parse_launch(outgoing + '  ' + incoming)
+            # for the client/callee we do the opposite -- just reverse the ports.
+            inpipe.set_state(gst.STATE_PLAYING)
+
         # so, we READ from the microphone pipe and write that to the hiddenservice (if we have a client)
         # ...and any data we get from the hiddenservice we write to the speaker pipe
         microphone = TCP4ServerEndpoint(reactor, 5000, interface="127.0.0.1")
         speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", 5001)
         hiddenservice = TCP4ServerEndpoint(reactor, 6000)
 
-        proto = PassThroughProtocol(None)
-        factory = PassThroughProtocolFactory(proto)
+        proto = CrossConnectProtocol(None)
+        factory = CrossConnectProtocolFactory(proto)
 
-        port = yield microphone.listen(factory)
-        print("IN! " + str(port) + " " + str(factory))
-
+        inport = yield microphone.listen(factory)
         outgoing = yield connectProtocol(speaker, proto)
-        print("OUT! " + str(outgoing))
 
+        audiodev = 'plughw:CARD=B20,DEV=0'
+        src = 'alsasrc device="%s"' % audiodev
+        outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=5000'
+        outpipe = gst.parse_launch(outgoing)
+        outpipe.set_state(gst.STATE_PLAYING)
+
+# here's some ASCII art of what we've got going on now:
+#
+# mic -> speex -> localhost:5000 --> CrossConnectProtocol -> localhost:5001 -> un-speex -> speaker
+#
+# what we WANT:
+#
+# mic-A -> speex -> localhost:5000 -> CCProtocol <-Tor-> CCProtocol -> localhost:5001 -> un-speex -> speaker-B
+# speaker-A <- un-speex <- localhost:5001 <- CCProtocol <-Tor-> CCProtocol <- localhost:5000 <- speex <- mic-B
+#
+# TODO:
+# 1. CrossConnectProtocol's "other" thing has to be a tor-based connection to the "other" speexchat instance
+# 2. change when we launch the gstream pipelines
+#    (i.e. inside CrossConnectProtocol?)
+
+        # never exit
         yield defer.Deferred()
         return
 
