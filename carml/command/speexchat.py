@@ -113,23 +113,18 @@ class GStreamerToHiddenServiceProtocol(Protocol):
         d = microphone.listen(factory)
         d.addCallback(self._microphone_connected).addErrback(self.error)
         print("DING %s" % d)
-        if True:
-            audiodev = 'plughw:CARD=B20,DEV=0'
-            src = 'alsasrc device="%s"' % audiodev
-            outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.base_port
-            if self.base_port != 5000:
-                outgoing = 'audiotestsrc ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.base_port
-            outpipe = gst.parse_launch(outgoing)
-            print("gstreamer: %s" % outgoing)
-            outpipe.set_state(gst.STATE_PLAYING)
+
+        audiodev = 'plughw:CARD=B20,DEV=0'
+        src = 'alsasrc device="%s"' % audiodev
+        outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.base_port
+        outpipe = gst.parse_launch(outgoing)
+        print("gstreamer: %s" % outgoing)
+        outpipe.set_state(gst.STATE_PLAYING)
 
     def _microphone_connected(self, inport):
+        return
         print("MICROPHONE %s" % inport)
         incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % (self.base_port + 1)
-        if self.base_port != 5000:
-            incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=kerblam.speex' % (self.base_port + 1)
-        else:
-            incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=kerding.speex' % (self.base_port + 1)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
@@ -140,7 +135,6 @@ class GStreamerToHiddenServiceProtocol(Protocol):
 
     def _speaker_connected(self, outport):
         print("SPEAKER %s" % outport)
-        
 
     def connectionMade(self):
         '''
@@ -155,8 +149,9 @@ class GStreamerToHiddenServiceProtocol(Protocol):
         The remote side is sending us data. It is SPEEX audio data, so dump it
         into the speakers.
         '''
-        if self.microphone:
-            self.microphone.transport.write(data)
+        print('DING %d' % len(data))
+        if self.speakers:
+            self.speakers.transport.write(data)
 
     def connectionLost(self, reason):
         print("Disconnect: " + str(reason))
@@ -167,6 +162,26 @@ class GStreamerToHiddenServiceProtocol(Protocol):
 
 class HiddenServiceFactory(Factory):
     protocol = GStreamerToHiddenServiceProtocol
+
+
+class HiddenServiceClientProtocol(Protocol):
+    def connectionMade(self):
+        print("connection made %s" % (self))
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % 5001
+        inpipe = gst.parse_launch(incoming)
+        inpipe.set_state(gst.STATE_PLAYING)
+
+        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", 5001)
+        self.proto = CrossConnectProtocol(self)
+        d = connectProtocol(speaker, self.proto)
+
+    def dataReceived(self, data):
+        if self.proto and self.proto.transport:
+            self.proto.transport.write(data)
+
+    def connectionLost(self, reason):
+        print("Lost: " + str(reason))
+        self.proto.transport.loseConnection()
 
 
 class SpeexChatCommand(object):
@@ -186,143 +201,30 @@ class SpeexChatCommand(object):
     options_class = SpeexChatOptions
 
     def validate(self, options, mainoptions):
-
         "ICarmlCommand API"
 
-    @defer.inlineCallbacks
     def run(self, options, mainoptions, state):
         "ICarmlCommand API"
 
         if options['client']:
-            ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 5050)
-            proto = GStreamerToHiddenServiceProtocol(5005)
-            p = yield connectProtocol(ep, proto)
-            print("Connected. %s" % p)
+            return self.run_client(options, mainoptions, state)
+        return self.run_server(options, mainoptions, state)
 
-        else:
-            ep = TCP4ServerEndpoint(reactor, 5050, interface="127.0.0.1")
-            factory = HiddenServiceFactory()
-            p = yield ep.listen(factory)
-            print("Listening. %s" % p)
-        
+    @defer.inlineCallbacks
+    def run_client(self, options, mainoptions, state):
+        ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 5050)
+        proto = HiddenServiceClientProtocol()
+        p = yield connectProtocol(ep, proto)
+        print("Connected. %s" % p)
         yield defer.Deferred()
-        return
 
-        if True:
-            audiodev = 'plughw:CARD=B20,DEV=0'
-            src = 'alsasrc device="%s"' % audiodev
-            outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=5000'
-            incoming = 'tcpserversrc host=localhost port=5001 ! queue ! decodebin ! audioconvert ! autoaudiosink'
-
-            inpipe = gst.parse_launch(incoming)
-#            pipeline = gst.parse_launch(outgoing + '  ' + incoming)
-            # for the client/callee we do the opposite -- just reverse the ports.
-            inpipe.set_state(gst.STATE_PLAYING)
-
-        # so, we READ from the microphone pipe and write that to the hiddenservice (if we have a client)
-        # ...and any data we get from the hiddenservice we write to the speaker pipe
-        microphone = TCP4ServerEndpoint(reactor, 5000, interface="127.0.0.1")
-        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", 5001)
-        hiddenservice = TCP4ServerEndpoint(reactor, 6000)
-
-        # XXX TODO if we're the initiator, we create a hidden service
-        # and listen on it; if instead we're the client, we connect to
-        # the hidden-service that the other person started
-
-        proto = CrossConnectProtocol(None)
-        factory = CrossConnectProtocolFactory(proto)
-
-        inport = yield microphone.listen(factory)
-        outgoing = yield connectProtocol(speaker, proto)
-
-        audiodev = 'plughw:CARD=B20,DEV=0'
-        src = 'alsasrc device="%s"' % audiodev
-        outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=5000'
-        outpipe = gst.parse_launch(outgoing)
-        outpipe.set_state(gst.STATE_PLAYING)
-
-# here's some ASCII art of what we've got going on now:
-#
-# mic -> speex -> localhost:5000 --> CrossConnectProtocol -> localhost:5001 -> un-speex -> speaker
-#
-# what we WANT:
-#
-# mic-A -> speex -> localhost:5000 -> CCProtocol <-Tor-> CCProtocol -> localhost:5001 -> un-speex -> speaker-B
-# speaker-A <- un-speex <- localhost:5001 <- CCProtocol <-Tor-> CCProtocol <- localhost:5000 <- speex <- mic-B
-#
-#
-#     mic-A ->    speex -> localhost:5000 | <-> CCProtocol <---> CCProtocol <-> | localhost:5001 -> un-speex -> speaker-B
-# speaker-A <- un-speex <- localhost:5001 |                 Tor                 | localhost:5000 <-    speex <- mic-B
-#
-# So that's 2 GStreamer pipelines per side and 1 Tor connection.
-#
-# TODO:
-# 1. CrossConnectProtocol's "other" thing has to be a tor-based connection to the "other" speexchat instance
-# 2. change when we launch the gstream pipelines
-#    (i.e. inside CrossConnectProtocol?)
-
-        # never exit
+    @defer.inlineCallbacks
+    def run_server(self, options, mainoptions, state):
+        ep = TCP4ServerEndpoint(reactor, 5050, interface="127.0.0.1")
+        factory = HiddenServiceFactory()
+        p = yield ep.listen(factory)
+        print("Listening. %s" % p)
         yield defer.Deferred()
-        return
-
-        if False:
-            config = txtorcon.TorConfig(state.protocol)
-            yield config.post_bootstrap
-
-            hs = txtorcon.HiddenService(config, '/tmp/foo', ['5000 127.0.0.1:5000', '5001 127.0.0.1:5001'])
-            config.hiddenservices.append(hs)
-            yield config.save()
-
-            print("Created hidden-service on 127.0.0.1:5000")
-            print(hs.hostname)
-
-        from subprocess import Popen, PIPE
-        import gst
-        
-        # for the hoster/initiator
-        audiodev = 'plughw:CARD=B20,DEV=0'
-        src = 'alsasrc device="%s"' % audiodev
-        #src = 'audiotestsrc'
-        if options.client:
-            outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=6000'
-            incoming = 'tcpserversrc host=localhost port=6000 ! queue ! decodebin ! audioconvert ! autoaudiosink'
-        else:
-            outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=5000'
-            incoming = 'tcpserversrc host=localhost port=5000 ! queue ! decodebin ! audioconvert ! autoaudiosink'
-
-        pipeline = gst.parse_launch(outgoing + '  ' + incoming)
-
-        # for the client/callee we do the opposite -- just reverse the ports.
-        
-        pipeline.set_state(gst.STATE_PLAYING)
-
-        d = defer.Deferred()
-        # READY means "not playing"
-        reactor.callLater(10, pipeline.set_state, gst.STATE_READY)
-        reactor.callLater(11, d.callback, pipeline)
-
-        yield d
-        return
-
-
-        args = [
-            'gst-launch-0.10', 
-            'v4l2src', '!',
-            'speex/x-raw-yuv,device=/dev/speex0,width=640,height=480,framerate=(fraction)10/1', '!',
-            'queue', '!',
-##            'image/jpeg,framerate=10/1', '!',
-            'xvimagesink,sync=false'
-        ]
-        print(' '.join(args))
-        gstream = Popen(args, stdout=PIPE)
-        # FIXME use Twisted's spawnProcess!
-
-        gstream.wait()
-        yield defer.succeed(gstream)
-        return
-        # we never callback() on this, so we serve forever
-        d = defer.Deferred()
-        yield d
 
 # the IPlugin/getPlugin stuff from Twisted picks up any object from
 # here than implements ICarmlCommand -- so we need to instantiate one
