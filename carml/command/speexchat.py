@@ -62,11 +62,11 @@ class CrossConnectProtocol(Protocol):
 
     def dataReceived(self, data):
         #print("%d bytes" % len(data))
-        if self.other:
+        if self.other and self.other.transport:
             self.other.transport.write(data)
 
     def connectionLost(self, reason):
-        print("Lost: " + str(reason))
+        print("crossconnect %s lost: " % (str(self), str(reason)))
         if self.other:
             self.other.transport.loseConnection()
 
@@ -83,58 +83,49 @@ class CrossConnectProtocolFactory(Factory):
         return p
 
 
-class GStreamerToHiddenServiceProtocol(Protocol):
-    '''
-    This runs as the server-side of the phone connection, listening on
-    a local TCP port (127.0.0.1:6000) that's connected to a Hidden
-    Service for the TCP stream. It starts up two local GStreamer
-    pipelines: one FROM the microphone (127.0.0.1:5000) and one TO the
-    speakers (127.0.0.1:5001).
-
-    It only starts the GStreamer pipelines once the other side
-    connects to our service. At that point, any data arriving on 6000
-    (from the other side, via Tor) goes to the speakers (via
-    localhost:5001) -- any data arriving via localhost:5000 goes out
-    over the network to the other side.
-    '''
-
-    def __init__(self, base_port=5000):
+class InitiatorProtocol(Protocol):
+    def __init__(self, port0=5000, port1=5001):
         self.microphone = None
         self.speakers = None
-        self.base_port = base_port
+        self.port0 = port0
+        self.port1 = port1
+        print('INITiate! %d %d' % (port0, port1))
 
     def error(self, foo):
         print("ERROR: %s" % foo)
 
     def create_microphone(self):
-        microphone = TCP4ServerEndpoint(reactor, self.base_port, interface="127.0.0.1")
-        factory = CrossConnectProtocolFactory(self)
-        print("mic, fac %s %s" % (microphone, factory))
-        d = microphone.listen(factory)
+        # here, we create a listener on port0 to which the gstreamer
+        # microphone pipeline will connect.
+        microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
+        d = microphone.listen(CrossConnectProtocolFactory(self))
         d.addCallback(self._microphone_connected).addErrback(self.error)
-        print("DING %s" % d)
 
+        # the gstreamer mic -> port0 pipeline
         audiodev = 'plughw:CARD=B20,DEV=0'
         src = 'alsasrc device="%s"' % audiodev
-        outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.base_port
+        outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.port0
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
 
     def _microphone_connected(self, inport):
-        return
-        print("MICROPHONE %s" % inport)
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % (self.base_port + 1)
+        # now we create the gstreamer -> speakers pipeline, listening
+        # on port1
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % (self.port1)
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=xxx.speex' % (self.port1)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
-        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.base_port + 1)
+        # ...and then connect the hidden service up to gstreamer
+        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port1)
         proto = CrossConnectProtocol(self)
         d = connectProtocol(speaker, proto)
+        self.speakers = proto
         d.addCallback(self._speaker_connected)
 
-    def _speaker_connected(self, outport):
-        print("SPEAKER %s" % outport)
+    def _speaker_connected(self, proto):
+        print("Liftoff! %s" % proto)
 
     def connectionMade(self):
         '''
@@ -147,10 +138,10 @@ class GStreamerToHiddenServiceProtocol(Protocol):
     def dataReceived(self, data):
         '''
         The remote side is sending us data. It is SPEEX audio data, so dump it
-        into the speakers.
+        into the speakers (if we've got those pipelines up and running).
         '''
-        print('DING %d' % len(data))
-        if self.speakers:
+        if self.speakers and self.speakers.transport:
+            #print('DING %d' % len(data))
             self.speakers.transport.write(data)
 
     def connectionLost(self, reason):
@@ -160,20 +151,44 @@ class GStreamerToHiddenServiceProtocol(Protocol):
                 proto.transport.loseConnection()
 
 
-class HiddenServiceFactory(Factory):
-    protocol = GStreamerToHiddenServiceProtocol
+class InitiatorFactory(Factory):
+    protocol = InitiatorProtocol
 
 
-class HiddenServiceClientProtocol(Protocol):
+class ResponderProtocol(Protocol):
+    def __init__(self, port0, port1):
+        self.port0 = port0
+        self.port1 = port1
+
     def connectionMade(self):
         print("connection made %s" % (self))
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % 5001
+        mic = TCP4ServerEndpoint(reactor, self.port1, interface="127.0.0.1")
+        self.factory = CrossConnectProtocolFactory(self)
+        d = mic.listen(self.factory)
+        d.addCallback(self._microphone_connected).addErrback(self.error)
+
+    def error(self, e):
+        print("ERR: %s" % e)
+        return None
+
+    def _microphone_connected(self, _):
+        print(str(_))
+        print("microphone! port %d" % self.port0)
+        outgoing = 'audiotestsrc ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.port1
+        outpipe = gst.parse_launch(outgoing)
+        outpipe.set_state(gst.STATE_PLAYING)
+
+
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % self.port0
+#        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=zzz.speex' % self.port0
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
-        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", 5001)
+        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port0)
         self.proto = CrossConnectProtocol(self)
         d = connectProtocol(speaker, self.proto)
+        d.addCallback(print)
+
 
     def dataReceived(self, data):
         if self.proto and self.proto.transport:
@@ -212,8 +227,12 @@ class SpeexChatCommand(object):
 
     @defer.inlineCallbacks
     def run_client(self, options, mainoptions, state):
+        port0 = yield txtorcon.util.available_tcp_port(reactor)
+        port1 = yield txtorcon.util.available_tcp_port(reactor)
+        print("ports: %d %d" % (port0, port1))
+
         ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 5050)
-        proto = HiddenServiceClientProtocol()
+        proto = ResponderProtocol(port0, port1)
         p = yield connectProtocol(ep, proto)
         print("Connected. %s" % p)
         yield defer.Deferred()
@@ -221,7 +240,7 @@ class SpeexChatCommand(object):
     @defer.inlineCallbacks
     def run_server(self, options, mainoptions, state):
         ep = TCP4ServerEndpoint(reactor, 5050, interface="127.0.0.1")
-        factory = HiddenServiceFactory()
+        factory = InitiatorFactory()
         p = yield ep.listen(factory)
         print("Listening. %s" % p)
         yield defer.Deferred()
