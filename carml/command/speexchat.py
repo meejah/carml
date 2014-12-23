@@ -97,6 +97,7 @@ class InitiatorProtocol(Protocol):
     def create_microphone(self):
         # here, we create a listener on port0 to which the gstreamer
         # microphone pipeline will connect.
+        ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
         microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
         d = microphone.listen(CrossConnectProtocolFactory(self))
         d.addCallback(self._microphone_connected).addErrback(self.error)
@@ -132,7 +133,7 @@ class InitiatorProtocol(Protocol):
         The other end has connected -- that is, we've got the remote side
         of the call on the line. So we start our GStreamer pipelines.
         '''
-        print("Connection!")
+        print("Client connected:", self.transport.getPeer())
         self.create_microphone()
 
     def dataReceived(self, data):
@@ -184,18 +185,19 @@ class ResponderProtocol(Protocol):
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
-        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port0)
+        speaker = TCP4ClientEndpoint(self.reactor, "127.0.0.1", self.port0)
         self.proto = CrossConnectProtocol(self)
         d = connectProtocol(speaker, self.proto)
         d.addCallback(print)
 
 
     def dataReceived(self, data):
+        print("responder data", len(data))
         if self.proto and self.proto.transport:
             self.proto.transport.write(data)
 
     def connectionLost(self, reason):
-        print("Lost: " + str(reason))
+        print("responder lost: " + str(reason))
         self.proto.transport.loseConnection()
 
 
