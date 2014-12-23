@@ -54,6 +54,8 @@ cffi==0.8.2
 # sha256: lX2YtmHAtktYCrb5SxJeCbZxQVTuUd5AvKFtPwB2uGw
 pycparser==2.10
 
+# FIXME confirm
+# sha256: A4CWvocjtnji6tMjsU0NPi2xYeDHzjyY_dGMpYaay3E
 Twisted==14.0.2
 
 # sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
