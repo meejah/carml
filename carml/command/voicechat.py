@@ -50,17 +50,38 @@ from txtorcon import TCPHiddenServiceEndpoint
 #     mic -> SPEEX -> 127.0.0.1:5000 <-  Python <-> Tor HS | <-> Python -> 127.0.0.1:5001 -> SPEEX -> speaker
 # speaker <- SPEEX <- 127.0.0.1:5001 ->                    |            <- 127.0.0.1:5000 <- SPEEX <- mic
 #
+#
+#      mic -> gstreamer-input  -> Proxy <-> Tor HS <-> Proxy -> gstreamer-output -> speakers
+# speakers <- gstreamer-output <-                            <- gstreamer-input  <- mic
+#
+#  `------------{ initiator }---------'  Internet/Tor  `--------------{ responder }--------'
+#
+# "gstreamer-input" is a gstreamer pipeline:
+#    autoaudiosrc ! audioconvert ! <encoderstuff> ! queue ! tcpclientsink 127.0.0.1:<port0>
+# "gstreamer-output" is a gstreamer pipeline:
+#    tcpserversrc 127.0.0.1:<port1> ! queue ! <decoderstuff> ! audioconvert ! autoaudiosink
+#
+# The "Proxy" things are Twisted Protocols that cross-connect two
+# streams. In this case, they make the "input" stream go to the
+# write-side of the hidden-service, and take the read-side of the
+# hidden-service and forward it to the "output" gstreamer.
+#
+# <encoderstuff> and <decoderstuff> are bits of gstreamer to make the
+# encoding "go". We're using OGG as a container, and opus, speex or
+# vorbis codecs. On suggestion of athena, I'm trying to use fixed-rate
+# encodings.
+#
 
 
-GS_ENCODE = " speexenc bitrate=16384 ! oggmux "
-GS_DECODE = " oggdemux ! speexdec "
-GS_ENCODE = " vorbisenc bitrate=16384 ! oggmux "
-GS_DECODE = " oggdemux ! vorbisdec "
-GS_ENCODE = " opusenc ! oggmux "
-GS_DECODE = " oggdemux ! opusdec "
+gstream_encoder = " speexenc bitrate=16384 ! oggmux "
+gstream_decoder = " oggdemux ! speexdec "
+gstream_encoder = " vorbisenc bitrate=16384 ! oggmux "
+gstream_decoder = " oggdemux ! vorbisdec "
+gstream_encoder = " opusenc ! oggmux "
+gstream_decoder = " oggdemux ! opusdec "
 
 
-class SpeexChatOptions(usage.Options):
+class VoiceChatOptions(usage.Options):
     """
     """
 
@@ -72,6 +93,9 @@ class SpeexChatOptions(usage.Options):
     ]
 
 
+# FIXME can't we use something from Twisted? Or "Tubes", which should
+# be released shortly for realz?
+# FIXME at least, we should be doing producer/consumer stuff so we don't bufferbloat
 class CrossConnectProtocol(Protocol):
     def __init__(self, other):
         print("CrossConnectProtocol()")
@@ -102,62 +126,87 @@ class CrossConnectProtocolFactory(Factory):
         self.other.other = p
         return p
 
+class VoiceChatMixIn(object):
+    """
+    This mixes in helper methods for both InitiatorProtocol and
+    ResponderProtocol. It expects the following attributes to exist on
+    self:
 
-class InitiatorProtocol(Protocol):
-    def __init__(self, port0=5000, port1=5001):
-        self.microphone = None
-        self.speakers = None
-        self.port0 = port0
-        self.port1 = port1
-        print('INITiate! %d %d' % (port0, port1))
+       port0, port1: arbitrary, free TCP ports
+       reactor: the reactor in use
+    """
 
-    def error(self, foo):
-        print("ERROR: %s" % foo)
+    @defer.inlineCallbacks
+    def _create_microphone(self):
+        """Create the gstreamer input-side chain, which means:
 
-    def create_microphone(self):
+        mic -> gstreamer -> localhost:port0 -> CrossConnectProtocol:port0 -> ...
+
+        The deferred callsback once CrossConnectProtocol is connected
+        to gstreamer.
+
+        """
+
         # here, we create a listener on port0 to which the gstreamer
         # microphone pipeline will connect.
         ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
         microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
-        d = microphone.listen(CrossConnectProtocolFactory(self))
-        d.addCallback(self._microphone_connected).addErrback(self.error)
+        port = yield microphone.listen(CrossConnectProtocolFactory(self))
 
-        # the gstreamer mic -> port0 pipeline
-        audiodev = 'plughw:CARD=B20,DEV=0'
-        src = 'alsasrc device="%s"' % audiodev
-        #src = 'audiotestsrc'
-        #src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
-        #src = 'autoaudiosrc'
-        outgoing = src + ' ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (GS_ENCODE, self.port0)
+        outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
+        defer.returnValue(port)
 
-    def _microphone_connected(self, inport):
-        # now we create the gstreamer -> speakers pipeline, listening
-        # on port1
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port1, GS_DECODE)
+    @defer.inlineCallbacks
+    def _create_speakers(self):
+        """
+        """
+
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port1, gstream_decoder)
         print("gstreamer: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
-        # ...and then connect the hidden service up to gstreamer
         speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port1)
         proto = CrossConnectProtocol(self)
-        d = connectProtocol(speaker, proto)
-        self.speakers = proto
-        d.addCallback(self._speaker_connected)
+        yield connectProtocol(speaker, proto)
+        defer.returnValue(proto)
 
-    def _speaker_connected(self, proto):
-        print("Liftoff! %s" % proto)
 
+class InitiatorProtocol(Protocol, VoiceChatMixIn):
+
+    """
+    This is for the person who runs the hidden-service. That is,
+    whomever initiates the call. Once they have the hidden-service
+    address, they communicate it to the other party (securely) who
+    then use this same command with --client
+
+    """
+    def __init__(self, reactor, port0=5000, port1=5001):
+        """
+        :param port0: arbitrary, unused TCP port
+        :param port1: arbitrary, unused TCP port
+        """
+        self.microphone = None
+        self.speakers = None
+        self.reactor = reactor
+        self.port0 = port0
+        self.port1 = port1
+        log.msg("initiate, on ports %d and %d" % (port0, port1))
+        print("init", port0, port1)
+
+    @defer.inlineCallbacks
     def connectionMade(self):
         '''
         The other end has connected -- that is, we've got the remote side
         of the call on the line. So we start our GStreamer pipelines.
         '''
         print("Client connected:", self.transport.getPeer())
-        self.create_microphone()
+        self.microphone = yield self._create_microphone()
+        self.speakers = yield self._create_speakers()
+        print("Done:\n   %s\n   %s\n" % (self.microphone, self.speakers))
 
     def dataReceived(self, data):
         '''
@@ -177,43 +226,28 @@ class InitiatorProtocol(Protocol):
 
 class InitiatorFactory(Factory):
     protocol = InitiatorProtocol
-
-
-class ResponderProtocol(Protocol):
     def __init__(self, reactor, port0, port1):
         self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
 
+    def buildProtocol(self, addr):
+        return InitiatorProtocol(self.reactor, self.port0, self.port1)
+
+
+class ResponderProtocol(Protocol, VoiceChatMixIn):
+    def __init__(self, reactor, port0, port1):
+        self.reactor = reactor
+        self.port0 = port0
+        self.port1 = port1
+        print("respond", port0, port1)
+
+    @defer.inlineCallbacks
     def connectionMade(self):
-        print("connection made %s" % (self))
-        mic = TCP4ServerEndpoint(self.reactor, self.port1, interface="127.0.0.1")
-        self.factory = CrossConnectProtocolFactory(self)
-        d = mic.listen(self.factory)
-        d.addCallback(self._microphone_connected).addErrback(self.error)
-
-    def error(self, e):
-        print("ERR: %s" % e)
-        return None
-
-    def _microphone_connected(self, _):
-        print("responder microphone! port %d" % self.port0)
-        outgoing = 'autoaudiosrc ! audioconvert ! %s ! tcpclientsink host=localhost port=%d' % (GS_ENCODE, self.port1)
-        print("gstreamer out: %s" % outgoing)
-        outpipe = gst.parse_launch(outgoing)
-        outpipe.set_state(gst.STATE_PLAYING)
-
-
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port0, GS_DECODE)
-        print("gstreamer in: %s" % incoming)
-        inpipe = gst.parse_launch(incoming)
-        inpipe.set_state(gst.STATE_PLAYING)
-
-        speaker = TCP4ClientEndpoint(self.reactor, "127.0.0.1", self.port0)
-        self.proto = CrossConnectProtocol(self)
-        d = connectProtocol(speaker, self.proto)
-        d.addCallback(print)
-
+        print("connected to:", self.transport.getPeer())
+        self.microphone = yield self._create_microphone()
+        self.speakers = yield self._create_speakers()
+        print("setup:\n   %s\n   %s\n" % (self.microphone, self.speakers))
 
     def dataReceived(self, data):
         if self.proto and self.proto.transport:
@@ -225,7 +259,7 @@ class ResponderProtocol(Protocol):
         self.proto.transport.loseConnection()
 
 
-class SpeexChatCommand(object):
+class VoiceChatCommand(object):
 
     """
     We start a hidden-serivce that is a bi-directional pipe for
@@ -233,13 +267,13 @@ class SpeexChatCommand(object):
     """
     zope.interface.implements(ICarmlCommand, IPlugin)
 
-    name = 'speexchat'
-    help_text = """Start a bi-directional speex chat on a hidden-service."""
+    name = 'voicechat'
+    help_text = """Start a bi-directional voice chat on a hidden-service."""
 #    build_state = True
 #    controller_connection = True
     build_state = False
     controller_connection = False
-    options_class = SpeexChatOptions
+    options_class = VoiceChatOptions
 
     def validate(self, options, mainoptions):
         "ICarmlCommand API"
@@ -267,14 +301,18 @@ class SpeexChatCommand(object):
 
     @defer.inlineCallbacks
     def run_server(self, reactor, options, mainoptions, state):
+        port0 = yield txtorcon.util.available_tcp_port(reactor)
+        port1 = yield txtorcon.util.available_tcp_port(reactor)
+        print("ports: %d %d" % (port0, port1))
+
         ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         # fixme should allow to specify private key, too
         #ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
-        factory = InitiatorFactory()
+        factory = InitiatorFactory(reactor, port0, port1)
         p = yield ep.listen(factory)
         print("Listening. %s (%s)" % (p, p.getHost()))
         yield defer.Deferred()
 
 # the IPlugin/getPlugin stuff from Twisted picks up any object from
 # here than implements ICarmlCommand -- so we need to instantiate one
-cmd = SpeexChatCommand()
+cmd = VoiceChatCommand()
