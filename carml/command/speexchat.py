@@ -54,8 +54,10 @@ from txtorcon import TCPHiddenServiceEndpoint
 
 GS_ENCODE = " speexenc bitrate=16384 ! oggmux "
 GS_DECODE = " oggdemux ! speexdec "
-GS_ENCODE = " vorbisenc max-bitrate=16384 min-bitrate=16384 ! oggmux "
+GS_ENCODE = " vorbisenc bitrate=16384 ! oggmux "
 GS_DECODE = " oggdemux ! vorbisdec "
+GS_ENCODE = " opusenc ! oggmux "
+GS_DECODE = " oggdemux ! opusdec "
 
 
 class SpeexChatOptions(usage.Options):
