@@ -108,7 +108,7 @@ class InitiatorProtocol(Protocol):
         src = 'alsasrc device="%s"' % audiodev
         src = 'audiotestsrc'
 #        src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
-        outgoing = src + ' ! audioconvert ! vorbisenc vbr=true ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
+        outgoing = src + ' ! audioconvert ! vorbisenc ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
@@ -178,7 +178,7 @@ class ResponderProtocol(Protocol):
 
     def _microphone_connected(self, _):
         print("responder microphone! port %d" % self.port0)
-        outgoing = 'autoaudiosrc ! audioconvert ! vorbisenc vbr=true ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        outgoing = 'autoaudiosrc ! audioconvert ! vorbisenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
         print("gstreamer out: %s" % outgoing)
         outpipe = gst.parse_launch(outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
