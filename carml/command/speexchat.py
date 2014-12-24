@@ -225,7 +225,7 @@ class SpeexChatCommand(object):
     def validate(self, options, mainoptions):
         "ICarmlCommand API"
 
-    def run(self, reactor, options, mainoptions, state):
+    def run(self, options, mainoptions, state):
         "ICarmlCommand API"
 
         if options['client']:
