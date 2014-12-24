@@ -45,10 +45,10 @@ class SpeexChatOptions(usage.Options):
     """
 
     optFlags = [
-        ('client', 'c', 'Connect to existing session (i.e. someone sent you a dot-onion).'),
     ]
 
     optParameters = [
+        ('client', 'c', None, 'Connect to existing session (i.e. someone sent you a dot-onion).', str),
     ]
 
 
@@ -61,9 +61,10 @@ class CrossConnectProtocol(Protocol):
         print("connection made %s %s" % (self, self.other))
 
     def dataReceived(self, data):
-        #print("%d bytes" % len(data))
         if self.other and self.other.transport:
+            print("%d bytes" % len(data))
             self.other.transport.write(data)
+            self.other.transport.flush()
 
     def connectionLost(self, reason):
         print("crossconnect %s lost: " % (str(self), str(reason)))
@@ -98,14 +99,16 @@ class InitiatorProtocol(Protocol):
         # here, we create a listener on port0 to which the gstreamer
         # microphone pipeline will connect.
         ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
-        microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
+        microphone = TCP4ServerEndpoint(reactor, self.port0)#, interface="127.0.0.1")
         d = microphone.listen(CrossConnectProtocolFactory(self))
         d.addCallback(self._microphone_connected).addErrback(self.error)
 
         # the gstreamer mic -> port0 pipeline
         audiodev = 'plughw:CARD=B20,DEV=0'
         src = 'alsasrc device="%s"' % audiodev
-        outgoing = src + ' ! audioconvert ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.port0
+        src = 'audiotestsrc'
+#        src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
+        outgoing = src + ' ! audioconvert ! vorbisenc vbr=true ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
@@ -113,8 +116,8 @@ class InitiatorProtocol(Protocol):
     def _microphone_connected(self, inport):
         # now we create the gstreamer -> speakers pipeline, listening
         # on port1
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % (self.port1)
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=xxx.speex' % (self.port1)
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! vorbisdec ! audioconvert ! autoaudiosink' % (self.port1)
+        ##incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=xxx.speex' % (self.port1)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
@@ -157,13 +160,14 @@ class InitiatorFactory(Factory):
 
 
 class ResponderProtocol(Protocol):
-    def __init__(self, port0, port1):
+    def __init__(self, reactor, port0, port1):
+        self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
 
     def connectionMade(self):
         print("connection made %s" % (self))
-        mic = TCP4ServerEndpoint(reactor, self.port1, interface="127.0.0.1")
+        mic = TCP4ServerEndpoint(self.reactor, self.port1, interface="127.0.0.1")
         self.factory = CrossConnectProtocolFactory(self)
         d = mic.listen(self.factory)
         d.addCallback(self._microphone_connected).addErrback(self.error)
@@ -173,15 +177,16 @@ class ResponderProtocol(Protocol):
         return None
 
     def _microphone_connected(self, _):
-        print(str(_))
-        print("microphone! port %d" % self.port0)
-        outgoing = 'audiotestsrc ! speexenc vbr=true ! queue ! tcpclientsink host=localhost port=%d' % self.port1
+        print("responder microphone! port %d" % self.port0)
+        outgoing = 'autoaudiosrc ! audioconvert ! vorbisenc vbr=true ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        print("gstreamer out: %s" % outgoing)
         outpipe = gst.parse_launch(outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
 
 
         incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % self.port0
 #        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=zzz.speex' % self.port0
+        print("gstreamer in: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
@@ -192,8 +197,8 @@ class ResponderProtocol(Protocol):
 
 
     def dataReceived(self, data):
-        print("responder data", len(data))
         if self.proto and self.proto.transport:
+            print("responder data", len(data))
             self.proto.transport.write(data)
 
     def connectionLost(self, reason):
@@ -220,28 +225,29 @@ class SpeexChatCommand(object):
     def validate(self, options, mainoptions):
         "ICarmlCommand API"
 
-    def run(self, options, mainoptions, state):
+    def run(self, reactor, options, mainoptions, state):
         "ICarmlCommand API"
 
         if options['client']:
-            return self.run_client(options, mainoptions, state)
-        return self.run_server(options, mainoptions, state)
+            return self.run_client(reactor, options, mainoptions, state)
+        return self.run_server(reactor, options, mainoptions, state)
 
     @defer.inlineCallbacks
-    def run_client(self, options, mainoptions, state):
+    def run_client(self, reactor, options, mainoptions, state):
         port0 = yield txtorcon.util.available_tcp_port(reactor)
         port1 = yield txtorcon.util.available_tcp_port(reactor)
         print("ports: %d %d" % (port0, port1))
 
-        ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 5050)
-        proto = ResponderProtocol(port0, port1)
+        ##'127.0.0.1'
+        ep = TCP4ClientEndpoint(reactor, options['client'], 5050)
+        proto = ResponderProtocol(reactor, port0, port1)
         p = yield connectProtocol(ep, proto)
         print("Connected. %s" % p)
         yield defer.Deferred()
 
     @defer.inlineCallbacks
-    def run_server(self, options, mainoptions, state):
-        ep = TCP4ServerEndpoint(reactor, 5050, interface="127.0.0.1")
+    def run_server(self, reactor, options, mainoptions, state):
+        ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         factory = InitiatorFactory()
         p = yield ep.listen(factory)
         print("Listening. %s" % p)
