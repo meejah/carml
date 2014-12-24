@@ -9,6 +9,7 @@ from twisted.plugin import IPlugin
 from twisted.internet import defer
 from twisted.internet import reactor # FIXME, use passed-in one
 from twisted.internet.endpoints import serverFromString
+from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import connectProtocol
 from twisted.internet.endpoints import TCP4ServerEndpoint
 from twisted.internet.endpoints import TCP4ClientEndpoint
@@ -26,6 +27,16 @@ from carml import util
 import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
+# FIXME NOTES
+#
+# . athena points out i should be using fixed-rate codec. makes sense.
+#    -> speex supports fixed bit-rates
+#    -> xiph.org says speex obsolete, use opus
+#    -> ...but opus in gstreamer's "bad" plugins
+#    -> something like "5kbps" is super-low, that's 625 bytes/second...
+#    -> so 2 tor cells per second would be ... 1024Bytes/s = 8192bps = 8kps
+#
+
 # okay, on the audio side we have two TCP streams:
 #
 # initiator-mic -> speex -> initiator:5000 (i.e. outgoing from initiator to client via 5000)
@@ -39,6 +50,12 @@ from txtorcon import TCPHiddenServiceEndpoint
 #     mic -> SPEEX -> 127.0.0.1:5000 <-  Python <-> Tor HS | <-> Python -> 127.0.0.1:5001 -> SPEEX -> speaker
 # speaker <- SPEEX <- 127.0.0.1:5001 ->                    |            <- 127.0.0.1:5000 <- SPEEX <- mic
 #
+
+
+GS_ENCODE = " speexenc bitrate=16384 ! oggmux "
+GS_DECODE = " oggdemux ! speexdec "
+GS_ENCODE = " vorbisenc max-bitrate=16384 min-bitrate=16384 ! oggmux "
+GS_DECODE = " oggdemux ! vorbisdec "
 
 
 class SpeexChatOptions(usage.Options):
@@ -109,7 +126,7 @@ class InitiatorProtocol(Protocol):
         #src = 'audiotestsrc'
         #src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
         #src = 'autoaudiosrc'
-        outgoing = src + ' ! audioconvert ! speexenc ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
+        outgoing = src + ' ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (GS_ENCODE, self.port0)
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
@@ -117,8 +134,7 @@ class InitiatorProtocol(Protocol):
     def _microphone_connected(self, inport):
         # now we create the gstreamer -> speakers pipeline, listening
         # on port1
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! speexdec ! audioconvert ! autoaudiosink' % (self.port1)
-        ##incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=xxx.speex' % (self.port1)
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port1, GS_DECODE)
         print("gstreamer: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
@@ -180,15 +196,13 @@ class ResponderProtocol(Protocol):
 
     def _microphone_connected(self, _):
         print("responder microphone! port %d" % self.port0)
-        outgoing = 'autoaudiosrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
-        #outgoing = 'audiotestsrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        outgoing = 'autoaudiosrc ! audioconvert ! %s ! tcpclientsink host=localhost port=%d' % (GS_ENCODE, self.port1)
         print("gstreamer out: %s" % outgoing)
         outpipe = gst.parse_launch(outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
 
 
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! speexdec ! audioconvert ! autoaudiosink' % self.port0
-#        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=zzz.speex' % self.port0
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port0, GS_DECODE)
         print("gstreamer in: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
@@ -242,7 +256,8 @@ class SpeexChatCommand(object):
         print("ports: %d %d" % (port0, port1))
 
         ##'127.0.0.1'
-        ep = TCP4ClientEndpoint(reactor, options['client'], 5050)
+        ##ep = TCP4ClientEndpoint(reactor, options['client'], 5050)
+        ep = clientFromString(reactor, options['client'])
         proto = ResponderProtocol(reactor, port0, port1)
         p = yield connectProtocol(ep, proto)
         print("Connected. %s" % p)
@@ -250,9 +265,9 @@ class SpeexChatCommand(object):
 
     @defer.inlineCallbacks
     def run_server(self, reactor, options, mainoptions, state):
-        #ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
+        ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         # fixme should allow to specify private key, too
-        ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
+        #ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         factory = InitiatorFactory()
         p = yield ep.listen(factory)
         print("Listening. %s (%s)" % (p, p.getHost()))
