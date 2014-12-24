@@ -99,14 +99,14 @@ class InitiatorProtocol(Protocol):
         # here, we create a listener on port0 to which the gstreamer
         # microphone pipeline will connect.
         ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
-        microphone = TCP4ServerEndpoint(reactor, self.port0)#, interface="127.0.0.1")
+        microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
         d = microphone.listen(CrossConnectProtocolFactory(self))
         d.addCallback(self._microphone_connected).addErrback(self.error)
 
         # the gstreamer mic -> port0 pipeline
         audiodev = 'plughw:CARD=B20,DEV=0'
         src = 'alsasrc device="%s"' % audiodev
-        src = 'audiotestsrc'
+        #src = 'audiotestsrc'
         #src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
         #src = 'autoaudiosrc'
         outgoing = src + ' ! audioconvert ! speexenc ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
@@ -180,8 +180,8 @@ class ResponderProtocol(Protocol):
 
     def _microphone_connected(self, _):
         print("responder microphone! port %d" % self.port0)
-        #outgoing = 'autoaudiosrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
-        outgoing = 'audiotestsrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        outgoing = 'autoaudiosrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        #outgoing = 'audiotestsrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
         print("gstreamer out: %s" % outgoing)
         outpipe = gst.parse_launch(outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
@@ -250,10 +250,12 @@ class SpeexChatCommand(object):
 
     @defer.inlineCallbacks
     def run_server(self, reactor, options, mainoptions, state):
-        ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
+        #ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
+        # fixme should allow to specify private key, too
+        ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         factory = InitiatorFactory()
         p = yield ep.listen(factory)
-        print("Listening. %s" % p)
+        print("Listening. %s (%s)" % (p, p.getHost()))
         yield defer.Deferred()
 
 # the IPlugin/getPlugin stuff from Twisted picks up any object from
