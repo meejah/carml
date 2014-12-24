@@ -109,7 +109,7 @@ class InitiatorProtocol(Protocol):
         src = 'audiotestsrc'
         #src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
         #src = 'autoaudiosrc'
-        outgoing = src + ' ! audioconvert ! vorbisenc ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
+        outgoing = src + ' ! audioconvert ! speexenc ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
@@ -117,7 +117,7 @@ class InitiatorProtocol(Protocol):
     def _microphone_connected(self, inport):
         # now we create the gstreamer -> speakers pipeline, listening
         # on port1
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! vorbisdec ! audioconvert ! autoaudiosink' % (self.port1)
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! speexdec ! audioconvert ! autoaudiosink' % (self.port1)
         ##incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=xxx.speex' % (self.port1)
         print("gstreamer: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
@@ -180,13 +180,14 @@ class ResponderProtocol(Protocol):
 
     def _microphone_connected(self, _):
         print("responder microphone! port %d" % self.port0)
-        outgoing = 'autoaudiosrc ! audioconvert ! vorbisenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        #outgoing = 'autoaudiosrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
+        outgoing = 'audiotestsrc ! audioconvert ! speexenc ! oggmux ! tcpclientsink host=localhost port=%d' % self.port1
         print("gstreamer out: %s" % outgoing)
         outpipe = gst.parse_launch(outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
 
 
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! vorbisdec ! audioconvert ! autoaudiosink' % self.port0
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! speexdec ! audioconvert ! autoaudiosink' % self.port0
 #        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=zzz.speex' % self.port0
         print("gstreamer in: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
