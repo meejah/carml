@@ -63,9 +63,8 @@ class CrossConnectProtocol(Protocol):
 
     def dataReceived(self, data):
         if self.other and self.other.transport:
-            print("%d bytes" % len(data))
+            ##print("%d bytes" % len(data))
             self.other.transport.write(data)
-###            self.other.transport.flush()
 
     def connectionLost(self, reason):
         print("crossconnect %s lost: " % (str(self), str(reason)))
@@ -108,7 +107,8 @@ class InitiatorProtocol(Protocol):
         audiodev = 'plughw:CARD=B20,DEV=0'
         src = 'alsasrc device="%s"' % audiodev
         src = 'audiotestsrc'
-#        src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
+        #src = 'pulsesrc device="alsa_card.usb-Blue_Microphone_Blue_Eyeball_2.0-02-B20"'
+        #src = 'autoaudiosrc'
         outgoing = src + ' ! audioconvert ! vorbisenc ! oggmux ! queue ! tcpclientsink host=localhost port=%d' % self.port0
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
@@ -119,6 +119,7 @@ class InitiatorProtocol(Protocol):
         # on port1
         incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! vorbisdec ! audioconvert ! autoaudiosink' % (self.port1)
         ##incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=xxx.speex' % (self.port1)
+        print("gstreamer: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
 
@@ -185,7 +186,7 @@ class ResponderProtocol(Protocol):
         outpipe.set_state(gst.STATE_PLAYING)
 
 
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! autoaudiosink' % self.port0
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! oggdemux ! vorbisdec ! audioconvert ! autoaudiosink' % self.port0
 #        incoming = 'tcpserversrc host=localhost port=%d ! queue ! decodebin ! audioconvert ! filesink location=zzz.speex' % self.port0
         print("gstreamer in: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
