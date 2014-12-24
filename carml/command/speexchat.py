@@ -6,8 +6,8 @@ import functools
 import zope.interface
 from twisted.python import usage, log
 from twisted.plugin import IPlugin
-from twisted.internet import reactor
 from twisted.internet import defer
+from twisted.internet import reactor # FIXME, use passed-in one
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import connectProtocol
 from twisted.internet.endpoints import TCP4ServerEndpoint
@@ -38,6 +38,7 @@ from txtorcon import TCPHiddenServiceEndpoint
 #                                                          |
 #     mic -> SPEEX -> 127.0.0.1:5000 <-  Python <-> Tor HS | <-> Python -> 127.0.0.1:5001 -> SPEEX -> speaker
 # speaker <- SPEEX <- 127.0.0.1:5001 ->                    |            <- 127.0.0.1:5000 <- SPEEX <- mic
+#
 
 
 class SpeexChatOptions(usage.Options):
@@ -64,7 +65,7 @@ class CrossConnectProtocol(Protocol):
         if self.other and self.other.transport:
             print("%d bytes" % len(data))
             self.other.transport.write(data)
-            self.other.transport.flush()
+###            self.other.transport.flush()
 
     def connectionLost(self, reason):
         print("crossconnect %s lost: " % (str(self), str(reason)))
