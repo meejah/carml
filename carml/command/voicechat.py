@@ -118,11 +118,11 @@ class VoiceChatOptions(usage.Options):
 # FIXME at least, we should be doing producer/consumer stuff so we don't bufferbloat
 class CrossConnectProtocol(Protocol):
     def __init__(self, other):
-        print("CrossConnectProtocol()")
+        #print("CrossConnectProtocol()")
         self.other = other
 
-    def connectionMade(self):
-        print("connection made %s %s" % (self, self.other))
+#    def connectionMade(self):
+#        print("connection made %s %s" % (self, self.other))
 
     def dataReceived(self, data):
         if self.other and self.other.transport:
@@ -264,38 +264,6 @@ class InitiatorFactory(Factory):
         return InitiatorProtocol(self.reactor, self.port0, self.port1)
 
 
-class ResponderProtocol(Protocol, VoiceChatMixIn):
-    def __init__(self, reactor, port0, port1):
-        self.reactor = reactor
-        self.port0 = port0
-        self.port1 = port1
-        self.speakers = None
-        self.microphone = None
-        print("respond", port0, port1)
-
-    @defer.inlineCallbacks
-    def connectionMade(self):
-        print("connected to:", self.transport.getPeer())
-        self.microphone = yield self._create_microphone()
-        self.speakers = yield self._create_speakers()
-
-        self.transport.registerProducer(self.speakers.transport, True)
-        self.speakers.transport.registerProducer(self, True)
-        self.speakers.transport.resumeProducing()
-
-        print("setup:\n   %s\n   %s\n" % (self.microphone, self.speakers))
-
-    def dataReceived(self, data):
-        if self.speakers and self.speakers.transport:
-            print("responder data", len(data))
-            self.speakers.transport.write(data)
-
-    def connectionLost(self, reason):
-        print("responder lost: " + str(reason))
-        if self.speakers:
-            self.speakers.transport.loseConnection()
-
-
 class VoiceChatCommand(object):
 
     """
@@ -331,7 +299,7 @@ class VoiceChatCommand(object):
         ##'127.0.0.1'
         ##ep = TCP4ClientEndpoint(reactor, options['client'], 5050)
         ep = clientFromString(reactor, options['client'])
-        proto = ResponderProtocol(reactor, port0, port1)
+        proto = InitiatorProtocol(reactor, port0, port1)
         p = yield connectProtocol(ep, proto)
         print("Connected. %s" % p)
         yield defer.Deferred()
