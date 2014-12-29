@@ -146,69 +146,18 @@ class CrossConnectProtocolFactory(Factory):
         self.other.other = p
         return p
 
-class VoiceChatMixIn(object):
+
+class AudioProtocol(Protocol):
     """
-    This mixes in helper methods for both InitiatorProtocol and
-    ResponderProtocol. It expects the following attributes to exist on
-    self:
+    This protocol is re-used for both the listening-side, and the
+    client-side. On the listening side, it's created via AudioFactory
+    (and is listening on hidden-service port). On the client side it
+    just connects.
 
        port0, port1: arbitrary, free TCP ports
        reactor: the reactor in use
     """
-
-    @defer.inlineCallbacks
-    def _create_microphone(self):
-        """Create the gstreamer input-side chain, which means:
-
-        mic -> gstreamer -> localhost:port0 -> CrossConnectProtocol:port0 -> ...
-
-        The deferred callsback once CrossConnectProtocol is connected
-        to gstreamer.
-
-        """
-
-        # here, we create a listener on port0 to which the gstreamer
-        # microphone pipeline will connect.
-        ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
-        microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
-        port = yield microphone.listen(CrossConnectProtocolFactory(self))
-        print("microphone listening", port)
-
-        #outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
-        outgoing = 'audiotestsrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
-        outpipe = gst.parse_launch(outgoing)
-        print("gstreamer: %s" % outgoing)
-        outpipe.set_state(gst.STATE_PLAYING)
-        defer.returnValue(port)
-
-    @defer.inlineCallbacks
-    def _create_speakers(self):
-        """
-        """
-
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port1, gstream_decoder)
-        print("gstreamer: %s" % incoming)
-        inpipe = gst.parse_launch(incoming)
-        inpipe.set_state(gst.STATE_PLAYING)
-
-        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port1)
-        proto = CrossConnectProtocol(self)
-        print("speakers connected", proto)
-        yield connectProtocol(speaker, proto)
-        defer.returnValue(proto)
-
-
-class InitiatorProtocol(Protocol, VoiceChatMixIn):
-    """
-    This is for the person who runs the hidden-service. That is,
-    whomever initiates the call. Once they have the hidden-service
-    address, they communicate it to the other party (securely) who
-    then use this same command with --client
-
-    FIXME XXX isn't this now precisely the same as ResponderProtocol
-
-    """
-    def __init__(self, reactor, port0=5000, port1=5001):
+    def __init__(self, reactor, port0, port1):
         """
         :param port0: arbitrary, unused TCP port
         :param port1: arbitrary, unused TCP port
@@ -252,16 +201,56 @@ class InitiatorProtocol(Protocol, VoiceChatMixIn):
             if proto:
                 proto.transport.loseConnection()
 
+    @defer.inlineCallbacks
+    def _create_microphone(self):
+        """Create the gstreamer input-side chain, which means:
 
-class InitiatorFactory(Factory):
-    protocol = InitiatorProtocol
+        mic -> gstreamer -> localhost:port0 -> CrossConnectProtocol:port0 -> ...
+
+        The deferred callsback once CrossConnectProtocol is connected
+        to gstreamer.
+
+        """
+
+        # here, we create a listener on port0 to which the gstreamer
+        # microphone pipeline will connect.
+        ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
+        microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
+        port = yield microphone.listen(CrossConnectProtocolFactory(self))
+        print("microphone listening", port)
+
+        #outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
+        outgoing = 'audiotestsrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
+        outpipe = gst.parse_launch(outgoing)
+        print("gstreamer: %s" % outgoing)
+        outpipe.set_state(gst.STATE_PLAYING)
+        defer.returnValue(port)
+
+    @defer.inlineCallbacks
+    def _create_speakers(self):
+        """
+        """
+
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port1, gstream_decoder)
+        print("gstreamer: %s" % incoming)
+        inpipe = gst.parse_launch(incoming)
+        inpipe.set_state(gst.STATE_PLAYING)
+
+        speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port1)
+        proto = CrossConnectProtocol(self)
+        print("speakers connected", proto)
+        yield connectProtocol(speaker, proto)
+        defer.returnValue(proto)
+
+
+class AudioFactory(Factory):
     def __init__(self, reactor, port0, port1):
         self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
 
     def buildProtocol(self, addr):
-        return InitiatorProtocol(self.reactor, self.port0, self.port1)
+        return AudioProtocol(self.reactor, self.port0, self.port1)
 
 
 class VoiceChatCommand(object):
@@ -299,7 +288,7 @@ class VoiceChatCommand(object):
         ##'127.0.0.1'
         ##ep = TCP4ClientEndpoint(reactor, options['client'], 5050)
         ep = clientFromString(reactor, options['client'])
-        proto = InitiatorProtocol(reactor, port0, port1)
+        proto = AudioProtocol(reactor, port0, port1)
         p = yield connectProtocol(ep, proto)
         print("Connected. %s" % p)
         yield defer.Deferred()
@@ -313,7 +302,7 @@ class VoiceChatCommand(object):
         ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         # fixme should allow to specify private key, too
         #ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
-        factory = InitiatorFactory(reactor, port0, port1)
+        factory = AudioFactory(reactor, port0, port1)
         p = yield ep.listen(factory)
         print("Listening. %s (%s)" % (p, p.getHost()))
         yield defer.Deferred()
