@@ -36,7 +36,8 @@ DEBUG = False
 class DownloadBundleOptions(usage.Options):
 
     optFlags = [
-        ('beta', 'b', 'Use the beta release.'),
+        ('beta', 'b', 'Use the beta release (if available).'),
+        ('alpha', 'a', 'Use the alpha release (if available).'),
         ('use-clearnet', '', 'Do the download over plain Internet, NOT via Tor (NOT RECOMMENDED).'),
         ('system-keychain', 'K', 'Instead of creating a temporary keychain with provided Tor keys, '
          "use the current user\'s existing GnuPG keychain."),
@@ -348,10 +349,21 @@ class DownloadBundleCommand(object):
             raise RuntimeError('Invalid JSON:\n%s' % data.getvalue())
 
         print(util.wrap(', '.join(versions), 60, '  '))
-        if options['beta']:
-            versions = filter(lambda x: 'beta' in x, versions)
+        alphas = filter(lambda x: 'alpha' in x, versions)
+        betas = filter(lambda x: 'beta' in x, versions)
+        others = set(versions).difference(alphas, betas)
+
+        if options['alpha']:
+            versions = alphas
+        elif options['beta']:
+            versions = betas
         else:
-            versions = filter(lambda x: 'beta' not in x, versions)
+            versions = others
+
+        if alphas:
+            print("Note: there are alpha versions available; use --alpha to download.")
+        if betas:
+            print("Note: there are beta versions available; use --beta to download.")
 
         target_version = None
         for v in versions:
@@ -364,6 +376,8 @@ class DownloadBundleCommand(object):
             print("  Potential versions are: %s" % ', '.join(versions))
             if options['beta']:
                 print("(Try without --beta)")
+            elif options['alpha']:
+                print("(Try without --alpha)")
             raise RuntimeError("Nothing to download found.")
 
         # download the signature, then browser-bundle (if they don't
