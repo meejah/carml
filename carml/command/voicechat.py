@@ -8,6 +8,7 @@ from twisted.python import usage, log
 from twisted.plugin import IPlugin
 from twisted.internet import defer
 from twisted.internet import reactor # FIXME, use passed-in one
+from twisted.internet import error
 from twisted.internet.endpoints import serverFromString
 from twisted.internet.endpoints import clientFromString
 from twisted.internet.endpoints import connectProtocol
@@ -27,12 +28,11 @@ from carml import util
 import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
-#
 # DOCUMENTATION notes
 #
 # things needed on debian:
-#  apt-get install liblzma-dev 
-
+#  apt-get install liblzma-dev
+#
 # FIXME NOTES
 #
 # . athena points out i should be using fixed-rate codec. makes sense.
@@ -168,7 +168,7 @@ class AudioProtocol(Protocol):
         self.port0 = port0
         self.port1 = port1
         log.msg("initiate, on ports %d and %d" % (port0, port1))
-        print("init", port0, port1)
+        #print("init", port0, port1)
 
     @defer.inlineCallbacks
     def connectionMade(self):
@@ -184,7 +184,7 @@ class AudioProtocol(Protocol):
         self.speakers.transport.registerProducer(self, True)
         self.speakers.transport.resumeProducing()
 
-        print("Done:\n   %s\n   %s\n" % (self.microphone, self.speakers))
+        #print("Done:\n   %s\n   %s\n" % (self.microphone, self.speakers))
 
     def dataReceived(self, data):
         '''
@@ -196,7 +196,8 @@ class AudioProtocol(Protocol):
             self.speakers.transport.write(data)
 
     def connectionLost(self, reason):
-        print("Disconnect: " + str(reason))
+        if reason != error.ConnectionLost:
+            print("Disconnect: " + str(reason))
         for proto in [self.microphone, self.speakers]:
             if proto:
                 proto.transport.loseConnection()
@@ -217,7 +218,7 @@ class AudioProtocol(Protocol):
         ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
         microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
         port = yield microphone.listen(CrossConnectProtocolFactory(self))
-        print("microphone listening", port)
+        #print("microphone listening", port)
 
         #outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
         outgoing = 'audiotestsrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
@@ -238,7 +239,7 @@ class AudioProtocol(Protocol):
 
         speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port1)
         proto = CrossConnectProtocol(self)
-        print("speakers connected", proto)
+        #print("speakers connected", proto)
         yield connectProtocol(speaker, proto)
         defer.returnValue(proto)
 
@@ -283,28 +284,28 @@ class VoiceChatCommand(object):
     def run_client(self, reactor, options, mainoptions, state):
         port0 = yield txtorcon.util.available_tcp_port(reactor)
         port1 = yield txtorcon.util.available_tcp_port(reactor)
-        print("ports: %d %d" % (port0, port1))
+        #print("ports: %d %d" % (port0, port1))
 
         ##'127.0.0.1'
         ##ep = TCP4ClientEndpoint(reactor, options['client'], 5050)
         ep = clientFromString(reactor, options['client'])
         proto = AudioProtocol(reactor, port0, port1)
         p = yield connectProtocol(ep, proto)
-        print("Connected. %s" % p)
+        print("Connected; call should be active.")
         yield defer.Deferred()
 
     @defer.inlineCallbacks
     def run_server(self, reactor, options, mainoptions, state):
         port0 = yield txtorcon.util.available_tcp_port(reactor)
         port1 = yield txtorcon.util.available_tcp_port(reactor)
-        print("ports: %d %d" % (port0, port1))
+        #print("ports: %d %d" % (port0, port1))
 
         ep = TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         # fixme should allow to specify private key, too
         #ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         factory = AudioFactory(reactor, port0, port1)
         p = yield ep.listen(factory)
-        print("Listening. %s (%s)" % (p, p.getHost()))
+        #print("Listening. %s (%s)" % (p, p.getHost()))
         yield defer.Deferred()
 
 # the IPlugin/getPlugin stuff from Twisted picks up any object from
