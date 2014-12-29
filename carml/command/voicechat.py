@@ -27,6 +27,12 @@ from carml import util
 import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
+#
+# DOCUMENTATION notes
+#
+# things needed on debian:
+#  apt-get install liblzma-dev 
+
 # FIXME NOTES
 #
 # . athena points out i should be using fixed-rate codec. makes sense.
@@ -71,6 +77,20 @@ from txtorcon import TCPHiddenServiceEndpoint
 # vorbis codecs. On suggestion of athena, I'm trying to use fixed-rate
 # encodings.
 #
+#
+# Use twisted.protocols.portforward instead of CrossConnect thing
+#
+# For initiator:
+#
+#      mic -> gstreamer -> localhost:micport (connects)
+# speakers <- gstreamer <- localhost:spkrport (listens)
+#
+# localhost:micport -> portforward.ProxyServer -> tor (HS listen port)
+#               tor -> portforward.ProxyClient -> localhost:spkrport
+#
+# So when Tor listening-port gets a connection, it wants to forward
+# that on so as to connect it up to the speakers, but it *also* wants
+# to pump any data from mic out over the tcp stream
 
 
 gstream_encoder = " speexenc bitrate=16384 ! oggmux "
@@ -152,8 +172,10 @@ class VoiceChatMixIn(object):
         ## FIXME if, e.g., we spell reactor "blkmalkmf" then we lose the error; something missing .addErrback!
         microphone = TCP4ServerEndpoint(reactor, self.port0, interface="127.0.0.1")
         port = yield microphone.listen(CrossConnectProtocolFactory(self))
+        print("microphone listening", port)
 
-        outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
+        #outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
+        outgoing = 'audiotestsrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
         outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         outpipe.set_state(gst.STATE_PLAYING)
@@ -171,12 +193,12 @@ class VoiceChatMixIn(object):
 
         speaker = TCP4ClientEndpoint(reactor, "127.0.0.1", self.port1)
         proto = CrossConnectProtocol(self)
+        print("speakers connected", proto)
         yield connectProtocol(speaker, proto)
         defer.returnValue(proto)
 
 
 class InitiatorProtocol(Protocol, VoiceChatMixIn):
-
     """
     This is for the person who runs the hidden-service. That is,
     whomever initiates the call. Once they have the hidden-service
@@ -201,7 +223,7 @@ class InitiatorProtocol(Protocol, VoiceChatMixIn):
     def connectionMade(self):
         '''
         The other end has connected -- that is, we've got the remote side
-        of the call on the line. So we start our GStreamer pipelines.
+        of the call on the line via Tor. So we start our GStreamer pipelines.
         '''
         print("Client connected:", self.transport.getPeer())
         self.microphone = yield self._create_microphone()
@@ -240,6 +262,8 @@ class ResponderProtocol(Protocol, VoiceChatMixIn):
         self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
+        self.speakers = None
+        self.microphone = None
         print("respond", port0, port1)
 
     @defer.inlineCallbacks
@@ -250,13 +274,14 @@ class ResponderProtocol(Protocol, VoiceChatMixIn):
         print("setup:\n   %s\n   %s\n" % (self.microphone, self.speakers))
 
     def dataReceived(self, data):
-        if self.proto and self.proto.transport:
+        if self.speakers and self.speakers.transport:
             print("responder data", len(data))
-            self.proto.transport.write(data)
+            self.speakers.transport.write(data)
 
     def connectionLost(self, reason):
         print("responder lost: " + str(reason))
-        self.proto.transport.loseConnection()
+        if self.speakers:
+            self.speakers.transport.loseConnection()
 
 
 class VoiceChatCommand(object):
