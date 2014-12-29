@@ -196,8 +196,7 @@ class AudioProtocol(Protocol):
             self.speakers.transport.write(data)
 
     def connectionLost(self, reason):
-        if reason != error.ConnectionLost:
-            print("Disconnect: " + str(reason))
+        print("Disconnect: " + reason.getErrorMessage())
         for proto in [self.microphone, self.speakers]:
             if proto:
                 proto.transport.loseConnection()
@@ -305,7 +304,7 @@ class VoiceChatCommand(object):
         #ep = serverFromString(reactor, "onion:5050")  ##TCP4ServerEndpoint(reactor, 5050)#, interface="127.0.0.1")
         factory = AudioFactory(reactor, port0, port1)
         p = yield ep.listen(factory)
-        #print("Listening. %s (%s)" % (p, p.getHost()))
+        print("We are listening:", p.getHost())
         yield defer.Deferred()
 
 # the IPlugin/getPlugin stuff from Twisted picks up any object from
