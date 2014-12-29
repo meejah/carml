@@ -205,6 +205,8 @@ class InitiatorProtocol(Protocol, VoiceChatMixIn):
     address, they communicate it to the other party (securely) who
     then use this same command with --client
 
+    FIXME XXX isn't this now precisely the same as ResponderProtocol
+
     """
     def __init__(self, reactor, port0=5000, port1=5001):
         """
@@ -228,6 +230,11 @@ class InitiatorProtocol(Protocol, VoiceChatMixIn):
         print("Client connected:", self.transport.getPeer())
         self.microphone = yield self._create_microphone()
         self.speakers = yield self._create_speakers()
+
+        self.transport.registerProducer(self.speakers.transport, True)
+        self.speakers.transport.registerProducer(self, True)
+        self.speakers.transport.resumeProducing()
+
         print("Done:\n   %s\n   %s\n" % (self.microphone, self.speakers))
 
     def dataReceived(self, data):
@@ -271,6 +278,11 @@ class ResponderProtocol(Protocol, VoiceChatMixIn):
         print("connected to:", self.transport.getPeer())
         self.microphone = yield self._create_microphone()
         self.speakers = yield self._create_speakers()
+
+        self.transport.registerProducer(self.speakers.transport, True)
+        self.speakers.transport.registerProducer(self, True)
+        self.speakers.transport.resumeProducing()
+
         print("setup:\n   %s\n   %s\n" % (self.microphone, self.speakers))
 
     def dataReceived(self, data):
