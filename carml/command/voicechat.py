@@ -57,13 +57,26 @@ from txtorcon import TCPHiddenServiceEndpoint
 # vorbis codecs. I'm trying to use fixed-rate encodings.
 
 
-# Playing with different audio codecs
+# If you're playing with different audio codecs, make sure the server
+# and client agree on what the de-coder is. You'll also want to look
+# in "run_server" below and use the test-setup to test over public
+# internet/LAN so you're not bringing up lots of hiddenservices "for
+# real"
+
+# have never seen this work with any "bitrate" options. works without
+# any such options.
+gstream_encoder = " vorbisenc max-bitrate=16384 ! oggmux "
+gstream_decoder = " oggdemux ! vorbisdec "
+
+# this works, but SPEEX is deprecated in favour of opus according to
+# xiph.org In any case, OPUS sounds better (but might be using VBR?)
 gstream_encoder = " speexenc bitrate=16384 ! oggmux "
 gstream_decoder = " oggdemux ! speexdec "
-gstream_encoder = " vorbisenc bitrate=16384 ! oggmux "
-gstream_decoder = " oggdemux ! vorbisdec "
-gstream_encoder = " opusenc ! oggmux "
+
+# this works, but not sure how to get fixed-bitrate for sure
+gstream_encoder = " opusenc bitrate=32000 constrained-vbr=false ! oggmux "
 gstream_decoder = " oggdemux ! opusdec "
+
 
 
 class VoiceChatOptions(usage.Options):
@@ -290,8 +303,26 @@ class VoiceChatCommand(object):
         # FIXME should allow to specify private key, too
         # XXX switch to TCP4ServerEndpoint(reactor, 5050) for testing
         # on public interface
-        ep = serverFromString(reactor, "onion:5050")
-        factory = AudioFactory(reactor, port0, port1)
+
+        if False:
+            # connect to system tor, add a hidden-service (FRAGILE!)
+            ep = txtorcon.TCPHiddenServiceEndpoint.system_tor(
+                reactor, clientFromString(reactor, "tcp:localhost:9051"), 5050,
+                "/tmp/voicechat_hidsrv")
+
+        elif False:
+            # listen on 0.0.0.0:5050 (PUBLIC!). For testing your setup.
+            ep = TCP4ServerEndpoint(reactor, 5050)
+
+        else:
+            # launch our own tor, add a hidden-service
+            ep = txtorcon.TCPHiddenServiceEndpoint.global_tor(
+                reactor, 5050, "/tmp/voicechat_hidsrv")
+            def prog(p, tag, msg):
+                print(util.pretty_progress(p), msg)
+            txtorcon.IProgressProvider(ep).add_progress_listener(prog)
+
+        factory = AudioFactory(reactor, all_done, port0, port1)
         p = yield ep.listen(factory)
 
         try:
