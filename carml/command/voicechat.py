@@ -120,8 +120,9 @@ class AudioProtocol(Protocol):
 
        port0, port1: arbitrary, free TCP ports
        reactor: the reactor in use
+       all_done: a Deferred we call/err back on when done
     """
-    def __init__(self, reactor, port0, port1):
+    def __init__(self, reactor, all_done, port0, port1):
         """
         :param port0: arbitrary, unused TCP port
         :param port1: arbitrary, unused TCP port
@@ -131,15 +132,24 @@ class AudioProtocol(Protocol):
         self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
+        self.all_done = all_done
         log.msg("initiate, on ports %d and %d" % (port0, port1))
         # print("init", port0, port1)
 
-    @defer.inlineCallbacks
     def connectionMade(self):
         '''
         The other end has connected -- that is, we've got the remote side
         of the call on the line via Tor. So we start our GStreamer pipelines.
         '''
+
+        d = self._connect_audio()
+        def foo(e):
+            self.all_done.errback(e)
+            return e
+        d.addErrback(foo)
+
+    @defer.inlineCallbacks
+    def _connect_audio(self):
         print("Client connected:", self.transport.getPeer())
         self.microphone = yield self._create_microphone()
         self.speakers = yield self._create_speakers()
@@ -152,18 +162,23 @@ class AudioProtocol(Protocol):
 
     def dataReceived(self, data):
         '''
-        The remote side is sending us data. It is SPEEX audio data, so dump it
+        The remote side is sending us data. It is audio data, so dump it
         into the speakers (if we've got those pipelines up and running).
         '''
         if self.speakers and self.speakers.transport:
-            # print('DING %d' % len(data))
             self.speakers.transport.write(data)
 
     def connectionLost(self, reason):
         print("Disconnect: " + reason.getErrorMessage())
-        for proto in [self.microphone, self.speakers]:
-            if proto:
-                proto.transport.loseConnection()
+        self.outpipe.set_state(gst.STATE_PAUSED)
+        self.outpipe = None
+        if self.microphone:
+            self.microphone.loseConnection()
+            self.microphone = None
+        if self.speakers and self.speakers.transport:
+            self.speakers.transport.loseConnection()
+            self.speakers = None
+        self.all_done.callback(None)
 
     @defer.inlineCallbacks
     def _create_microphone(self):
@@ -185,9 +200,9 @@ class AudioProtocol(Protocol):
         # XXX if you need a custom gstreamer src, change autoaudiosrc
         # here -- should maybe provide command-line option?
         outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
-        outpipe = gst.parse_launch(outgoing)
+        self.outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
-        outpipe.set_state(gst.STATE_PLAYING)
+        self.outpipe.set_state(gst.STATE_PLAYING)
         defer.returnValue(port)
 
     @defer.inlineCallbacks
@@ -213,14 +228,16 @@ class AudioProtocol(Protocol):
 class AudioFactory(Factory):
     """
     Creates AudioProtocol on the server-side with specified ports.
+    all_done is a Deferred we will call/err-back on
     """
-    def __init__(self, reactor, port0, port1):
+    def __init__(self, reactor, all_done, port0, port1):
         self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
+        self.all_done = all_done
 
     def buildProtocol(self, addr):
-        return AudioProtocol(self.reactor, self.port0, self.port1)
+        return AudioProtocol(self.reactor, self.all_done, self.port0, self.port1)
 
 
 class VoiceChatCommand(object):
@@ -249,19 +266,22 @@ class VoiceChatCommand(object):
 
     @defer.inlineCallbacks
     def run_client(self, reactor, options, mainoptions, state):
+        all_done = defer.Deferred()
         port0 = yield txtorcon.util.available_tcp_port(reactor)
         port1 = yield txtorcon.util.available_tcp_port(reactor)
         # print("ports: %d %d" % (port0, port1))
 
         # ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 5050)
         ep = clientFromString(reactor, options['client'])
-        proto = AudioProtocol(reactor, port0, port1)
+        proto = AudioProtocol(reactor, all_done, port0, port1)
         p = yield connectProtocol(ep, proto)
         print("Connected; call should be active.")
-        yield defer.Deferred()
+        yield all_done
+        print("Call has completed.")
 
     @defer.inlineCallbacks
     def run_server(self, reactor, options, mainoptions, state):
+        all_done = defer.Deferred()
         port0 = yield txtorcon.util.available_tcp_port(reactor)
         port1 = yield txtorcon.util.available_tcp_port(reactor)
         # print("ports: %d %d" % (port0, port1))
@@ -273,8 +293,19 @@ class VoiceChatCommand(object):
         ep = serverFromString(reactor, "onion:5050")
         factory = AudioFactory(reactor, port0, port1)
         p = yield ep.listen(factory)
-        print("We are listening:", p.getHost())
-        yield defer.Deferred()
+
+        try:
+            hs = txtorcon.IHiddenService(p)
+            toraddr = hs.getHost()
+            print("We are listening:", toraddr)
+            print("SECURELY tell your friend to run:")
+            print('carml voicechat --client tor:%s:%d' % (toraddr.onion_uri, toraddr.onion_port))
+        except TypeError as e:
+            print("Testing setup; listening PUBLICALLY.")
+            print("You are NOT ANONYMOUS. Connect via:", p.getHost())
+
+        yield all_done
+        print("Call has completed.")
 
 # the IPlugin/getPlugin stuff from Twisted picks up any object from
 # here than implements ICarmlCommand -- so we need to instantiate one
