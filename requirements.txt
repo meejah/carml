@@ -67,3 +67,4 @@ Twisted==14.0.2
 
 # sha256: vmXwDtKOMHVvHvOTd8s4JICiNoaZF51kaoTXn-k0mUE
 #pyasn1_modules==0.0.5
+characteristic==14.3.0

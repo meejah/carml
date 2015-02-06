@@ -7,7 +7,9 @@ import functools
 import zope.interface
 from twisted.python import usage, log, failure
 from twisted.internet import defer, reactor, error
-import humanize
+from humanize import naturalsize
+from humanize.time import naturaldelta
+from characteristic import attributes, Attribute
 
 import txtorcon
 
@@ -23,7 +25,7 @@ class MonitorOptions(usage.Options):
         ('no-streams', 's', 'Without this, list Tor streams.'),
         ('no-circuits', 'c', 'Without this, list Tor circuits.'),
         ('no-addr', 'a', 'Without this, list address mappings (and expirations, with -f).'),
-        ('no-guards', 'g', 'Without this, Information about your current Guards.'),
+        ('no-guards', 'g', 'Without this, information about your current Guards.'),
         ('verbose', 'v', 'Additional information. Circuits: ip, location, asn, country-code.'),
     ]
 
@@ -85,10 +87,33 @@ def string_for_stream(state, stream):
     return 'Stream %d to %s %s%s%s' % (stream.id, hoststring, colors.green('attached'), circ, proc)
 
 
+@attributes([
+    Attribute("read", default_value=0),
+    Attribute("written", default_value=0),
+])
+class Bandwidth(object):
+    '''
+    Just a data-container for read/written bytes that is attached to
+    each stream we see.
+    '''
+
 class StreamLogger(txtorcon.StreamListenerMixin):
     def __init__(self, state, verbose):
         self.state = state
         self.verbose = verbose
+        state.protocol.add_event_listener('STREAM_BW', self.bandwidth_stream)
+
+    def bandwidth_stream(self, msg):
+        sid, written, read = map(int, msg.split())
+        stream = self.state.streams[sid]
+        if hasattr(stream, 'bandwidth'):
+            # if we didn't get an "new" event, our totals would have
+            # been wrong anyway so we don't monitor the bandwidth
+            stream.bandwidth.written += written
+            stream.bandwidth.read += read
+
+    def stream_new(self, stream):
+        stream.bandwidth = Bandwidth()
 
     def stream_attach(self, stream, circuit):
         print(string_for_stream(self.state, stream))
@@ -100,6 +125,13 @@ class StreamLogger(txtorcon.StreamListenerMixin):
     def stream_failed(self, stream, remote_reason='', **kw):
         print('Stream %d %s because "%s"' % (stream.id, colors.red('failed'),
                                              colors.red(remote_reason)))
+
+    def stream_closed(self, stream, reason='', **kw):
+        bw = getattr(stream, 'bandwidth', Bandwidth())
+        up = colors.green(naturalsize(bw.written))
+        down = colors.red(naturalsize(bw.read))
+        print('Stream %d to %s closed ("%s") %s up, %s down.' %
+              (stream.id, stream.target_host, colors.faint(reason), up, down))
 
 
 def flags(d):
@@ -140,7 +172,7 @@ class CircuitLogger(txtorcon.CircuitListenerMixin):
     def circuit_closed(self, circuit, **kw):
         print('Circuit %d %s lasted %s (%s).' % (circuit.id,
                                                  colors.red('closed'),
-                                                 humanize.time.naturaldelta(circuit.age()),
+                                                 naturaldelta(circuit.age()),
                                                  flags(kw)))
 
 
