@@ -74,7 +74,7 @@ gstream_encoder = " speexenc bitrate=16384 ! oggmux "
 gstream_decoder = " oggdemux ! speexdec "
 
 # this works, but not sure how to get fixed-bitrate for sure
-gstream_encoder = " opusenc bitrate=32000 constrained-vbr=false ! oggmux "
+gstream_encoder = " opusenc bitrate=16000 constrained-vbr=false ! oggmux "
 gstream_decoder = " oggdemux ! opusdec "
 
 
