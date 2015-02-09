@@ -88,6 +88,8 @@ class VoiceChatOptions(usage.Options):
 
     optParameters = [
         ('client', 'c', None, 'Connect to existing session (i.e. someone sent you a dot-onion).', str),
+        ('src', '', 'autoaudiosrc', 'String to give gstreamer as audio source.', str),
+        ('sink', '', 'autoaudiosink', 'String to give gstreamer as audio sink', str),
     ]
 
 
@@ -135,11 +137,15 @@ class AudioProtocol(Protocol):
        reactor: the reactor in use
        all_done: a Deferred we call/err back on when done
     """
-    def __init__(self, reactor, all_done, port0, port1):
+    def __init__(self, reactor, all_done, port0, port1, src, sink):
         """
         :param port0: arbitrary, unused TCP port
         :param port1: arbitrary, unused TCP port
         """
+        assert '!' not in sink
+        assert '!' not in src
+        self.src = src
+        self.sink = sink
         self.microphone = None
         self.speakers = None
         self.reactor = reactor
@@ -212,7 +218,7 @@ class AudioProtocol(Protocol):
 
         # XXX if you need a custom gstreamer src, change autoaudiosrc
         # here -- should maybe provide command-line option?
-        outgoing = 'autoaudiosrc ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (gstream_encoder, self.port0)
+        outgoing = '%s ! audioconvert ! %s ! queue ! tcpclientsink host=localhost port=%d' % (self.src, gstream_encoder, self.port0)
         self.outpipe = gst.parse_launch(outgoing)
         print("gstreamer: %s" % outgoing)
         self.outpipe.set_state(gst.STATE_PLAYING)
@@ -226,7 +232,7 @@ class AudioProtocol(Protocol):
         ... -> localhost:port1 -> gstreamer -> speakers
         """
 
-        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! autoaudiosink' % (self.port1, gstream_decoder)
+        incoming = 'tcpserversrc host=localhost port=%d ! queue ! %s ! audioconvert ! %s' % (self.port1, gstream_decoder, self.sink)
         print("gstreamer: %s" % incoming)
         inpipe = gst.parse_launch(incoming)
         inpipe.set_state(gst.STATE_PLAYING)
@@ -243,14 +249,17 @@ class AudioFactory(Factory):
     Creates AudioProtocol on the server-side with specified ports.
     all_done is a Deferred we will call/err-back on
     """
-    def __init__(self, reactor, all_done, port0, port1):
+    def __init__(self, reactor, all_done, port0, port1, src, sink):
+        # FIXME what about just and "args" tuple instead?
         self.reactor = reactor
         self.port0 = port0
         self.port1 = port1
         self.all_done = all_done
+        self.src = src
+        self.sink = sink
 
     def buildProtocol(self, addr):
-        return AudioProtocol(self.reactor, self.all_done, self.port0, self.port1)
+        return AudioProtocol(self.reactor, self.all_done, self.port0, self.port1, self.src, self.sink)
 
 
 class VoiceChatCommand(object):
@@ -322,7 +331,7 @@ class VoiceChatCommand(object):
                 print(util.pretty_progress(p), msg)
             txtorcon.IProgressProvider(ep).add_progress_listener(prog)
 
-        factory = AudioFactory(reactor, all_done, port0, port1)
+        factory = AudioFactory(reactor, all_done, port0, port1, options['src'], options['sink'])
         p = yield ep.listen(factory)
 
         try:
