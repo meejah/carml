@@ -295,7 +295,7 @@ class VoiceChatCommand(object):
 
         # ep = TCP4ClientEndpoint(reactor, '127.0.0.1', 5050)
         ep = clientFromString(reactor, options['client'])
-        proto = AudioProtocol(reactor, all_done, port0, port1)
+        proto = AudioProtocol(reactor, all_done, port0, port1, options['src'], options['sink'])
         p = yield connectProtocol(ep, proto)
         print("Connected; call should be active.")
         yield all_done
