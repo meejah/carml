@@ -95,6 +95,9 @@ gstream_decoder = " oggdemux ! opusdec "
 gstream_encoder = " audioresample ! opusenc bitrate=16000 constrained-vbr=false ! rtpopuspay "
 gstream_decoder = " gstrtpjitterbuffer latency=100 do-lost=true ! rtpopusdepay ! opusdec plc=true "
 
+gstream_encoder = " opusenc bitrate=32000 constrained-vbr=false ! rtpopuspay "
+gstream_decoder = " rtpopusdepay ! opusdec "
+
 
 
 class VoiceChatOptions(usage.Options):
