@@ -63,6 +63,19 @@ from txtorcon import TCPHiddenServiceEndpoint
 # internet/LAN so you're not bringing up lots of hiddenservices "for
 # real"
 
+# Okay, I recevied from good feedback from Vincent Penquerc'h
+# https://lists.torproject.org/pipermail/tor-dev/attachments/20150210/56645b47/attachment.mht
+#
+# Some TODOs from that:
+#
+# + Opus: yes
+# - double-check we're getting constant bit-rate:
+#   GST_DEBUG_FILE=/tmp/blarg
+#   GST_DEBUG=GST_SCHEDULING:3
+#   -> check that byte-sizes of the buffers doesn't change
+# - Use RTP instead of OGG for muxing
+
+
 # have never seen this work with any "bitrate" options. works without
 # any such options.
 gstream_encoder = " vorbisenc max-bitrate=16384 ! oggmux "
@@ -76,6 +89,10 @@ gstream_decoder = " oggdemux ! speexdec "
 # this works, but not sure how to get fixed-bitrate for sure
 gstream_encoder = " opusenc bitrate=16000 constrained-vbr=false ! oggmux "
 gstream_decoder = " oggdemux ! opusdec "
+
+# trying to make RTP work instead of OGG
+gstream_encoder = " opusenc bitrate=16000 constrained-vbr=false ! rtpopuspay "
+gstream_decoder = " rtpopusdepay ! opusdec "
 
 
 
