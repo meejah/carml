@@ -95,7 +95,7 @@ gstream_decoder = " oggdemux ! opusdec "
 gstream_encoder = " audioresample ! opusenc bitrate=16000 constrained-vbr=false ! rtpopuspay "
 gstream_decoder = " gstrtpjitterbuffer latency=100 do-lost=true ! rtpopusdepay ! opusdec plc=true "
 
-gstream_encoder = " opusenc bitrate=32000 constrained-vbr=false ! rtpopuspay "
+gstream_encoder = " audioresample ! opusenc bitrate=32000 constrained-vbr=false ! rtpopuspay "
 gstream_decoder = " rtpopusdepay ! opusdec "
 
 
@@ -105,6 +105,7 @@ class VoiceChatOptions(usage.Options):
     """
 
     optFlags = [
+        ('sanity', 's', 'Sanity-check your setup; should play audiotestsrc for 1 second and exit.')
     ]
 
     optParameters = [
@@ -333,6 +334,22 @@ class VoiceChatCommand(object):
         # FIXME should allow to specify private key, too
         # XXX switch to TCP4ServerEndpoint(reactor, 5050) for testing
         # on public interface
+
+        print("GST:", gst.version())
+        if options['sanity']:
+            print("sanity-test an opus pipeline with your gstreamer")
+            print("if you rip your headphones off due to loud sound, it works")
+            pipeline = 'audiotestsrc ! ' + gstream_encoder + ' ! queue ! ' + \
+                       gstream_decoder + ' ! autoaudiosink '
+            pipe = gst.parse_launch(pipeline)
+            print("starting")
+            pipe.set_state(gst.STATE_PLAYING)
+            import time
+            time.sleep(1)
+            print("stoping")
+            pipe.set_state(gst.STATE_PAUSED)
+            import sys
+            sys.exit(0)
 
         if False:
             # connect to system tor, add a hidden-service (FRAGILE!)
