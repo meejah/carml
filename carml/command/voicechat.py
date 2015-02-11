@@ -91,8 +91,9 @@ gstream_encoder = " opusenc bitrate=16000 constrained-vbr=false ! oggmux "
 gstream_decoder = " oggdemux ! opusdec "
 
 # trying to make RTP work instead of OGG
-gstream_encoder = " opusenc bitrate=16000 constrained-vbr=false ! rtpopuspay "
-gstream_decoder = " rtpopusdepay ! opusdec "
+# see also http://gstreamer-devel.966125.n4.nabble.com/Need-help-with-using-OPUS-over-RTP-td4661409.html
+gstream_encoder = " audioresample ! opusenc bitrate=16000 constrained-vbr=false ! rtpopuspay "
+gstream_decoder = " gstrtpjitterbuffer latency=100 do-lost=true ! rtpopusdepay ! opusdec plc=true "
 
 
 
