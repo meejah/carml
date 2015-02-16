@@ -18,7 +18,7 @@ ansicolors==1.0.2
 # sha256: em6Pq3H9BcIj2Ga2C5mM8whmHvH8h9lOBsO1H0raSmo
 # this is the hash for the .whl file (usually the winner):
 # sha256: M_BFIzKbFKzLIFS4HF2oh8KLQCx5e6iV3B7liCThB_E
-txtorcon==0.10.1
+txtorcon>=0.12.0
 
 # should be 1.13.0.3 but distutils doesn't like that?!
 # sha256: 3xqecGLH42k8OZU3BbdeD-t7h0agUTX_srjNmHCMnEM
@@ -49,7 +49,7 @@ cffi==0.8.2
 pycparser==2.10
 
 # sha256: vf2WGsIhb1xlsH8sOl5RFvZxO4wc8HbEABDGSBDSaWM
-Twisted==14.0.0
+Twisted==15.0.0
 
 # sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
 #pyasn1==0.1.7
