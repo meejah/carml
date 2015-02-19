@@ -48,15 +48,9 @@ class BandwidthTracker(object):
 
     def circuits(self):
         return len(self._state.circuits)
-        return len(
-            filter(
-                lambda circ: circ.purpose == 'GENERAL',
-                self._state.circuits.itervalues()
-            )
-        )
 
     def streams(self):
-        return len(self._state.streams.values())
+        return len(self._state.streams)
 
     def on_bandwidth(self, s):
         r, w = map(int, s.split())
@@ -73,9 +67,16 @@ class BandwidthTracker(object):
         kbup = self._bandwidth[-1][1] / 1024.0
         kbdn = self._bandwidth[-1][0] / 1024.0
 
-        status = ' ' + colors.green('%.2f' % kbdn) + ' KiB read'
-        status += ', ' + colors.red('%.2f' % kbup) + ' KiB write'
+        status = ' ' + colors.green('%.2f' % kbdn) + '/' # + ' KiB read'
+        status += ', ' + colors.red('%.2f' % kbup) # + ' KiB write'
         status += ' (%d streams, %d circuits)' % (self.streams(), self.circuits())
+
+        # include the paths of any currently-active streams
+        for stream in self._state.streams.values():
+            # ...there's a window during which it may not be attached yet
+            if stream.circuit:
+                circpath = '>'.join(map(lambda r: r.location.countrycode, stream.circuit.path))
+                status += ' ' + circpath
         print(left_bar(up, 20) + unichr(0x21f5) + right_bar(dn, 20) + status)
 
 
