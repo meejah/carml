@@ -41,7 +41,7 @@ class DownloadBundleOptions(usage.Options):
         ('use-clearnet', '', 'Do the download over plain Internet, NOT via Tor (NOT RECOMMENDED).'),
         ('system-keychain', 'K', 'Instead of creating a temporary keychain with provided Tor keys, '
          "use the current user\'s existing GnuPG keychain."),
-        ('extract', 'e', 'After downloading, run commands to extract the browser in-place.'),
+        ('no-extract', 'E', 'Do not extract after downloading.'),
     ]
 
     optParameters = []
@@ -273,7 +273,7 @@ class DownloadBundleCommand(object):
     options_class = DownloadBundleOptions
 
     def validate(self, options, mainoptions):
-        if options['extract']:  # and 'win' in platform.platform()[0].lower():
+        if not options['no-extract']:  # and 'win' in platform.platform()[0].lower():
             try:
                 import backports.lzma
             except ImportError:
@@ -404,7 +404,7 @@ class DownloadBundleCommand(object):
         if verify_signature(sig_fname, system_gpg=bool(options['system-keychain'])):
             print(util.colors.green("Signature is good."))
 
-            if not options['extract']:
+            if options['no-extract']:
                 print("Download and signature check of the Tor Browser Bundle")
                 print("has SUCCEEDED.\n")
                 print("It is here: %s\n" % os.path.realpath(dist_fname))

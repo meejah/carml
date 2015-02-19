@@ -12,8 +12,8 @@
 The ``downloadbundle`` command figures out what the latest Tor Browser
 Bundle is (from check.torproject.org), downloads the package for your
 operating system and (optionally) extracts it. It has bundled
-certificates for torproject.org and checks that the public keys are
-the same. It also checks the signature on the downloaded bundle, using
+certificates for torproject.org and **checks that the public keys** are
+the same. It also **checks the signature** on the downloaded bundle, using
 bundled keys for Tor people or (optionally) the current user's GnuPG
 keychain.
 
@@ -24,13 +24,13 @@ bundled keys (of Tor people who typically sign the release) there.
 Use ``--beta`` (``-b``) to download the latest Beta release instead
 (if available).
 
-Use ``--extract`` (``-e``) to extract the bundle after
-downloading. You additionally need ``backports.lzma`` installed for
-this to work.
+Use ``--no-extract`` (``-E``) if you do not wish to extract the bundle
+after downloading. You additionally need ``backports.lzma`` installed
+for this to work.
 
 If you're really feeling adventurous, don't have a system Tor running,
 or can't install ``txsocksx`` for some reason, you can (completely
-inadvisably) use ``--use-clearnet`` to download over the plain
+inadvisably) pass ``--use-clearnet`` to download over the plain
 Internet. Of course, you still get the certificate pins and signature
 checking.
 
