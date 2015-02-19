@@ -72,12 +72,15 @@ class BandwidthTracker(object):
         status += ' (%d streams, %d circuits)' % (self.streams(), self.circuits())
 
         # include the paths of any currently-active streams
+        streams = ''
         for stream in self._state.streams.values():
             # ...there's a window during which it may not be attached yet
             if stream.circuit:
                 circpath = '>'.join(map(lambda r: r.location.countrycode, stream.circuit.path))
-                status += ' ' + circpath
-        print(left_bar(up, 20) + unichr(0x21f5) + right_bar(dn, 20) + status)
+                streams += ' ' + circpath
+        if len(streams) > 24:
+            streams = streams[:21] + '...'
+        print(left_bar(up, 20) + unichr(0x21f5) + right_bar(dn, 20) + status + streams)
 
 
 
