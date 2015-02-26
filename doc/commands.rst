@@ -70,6 +70,7 @@ options listed above). You can get any help on a command with the
    :maxdepth: 1
 
    command-pastebin
+   command-copybin
    command-downloadbundle
    command-monitor
    command-stream
