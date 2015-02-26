@@ -27,7 +27,7 @@ class CopyBinOptions(usage.Options):
     ]
 
     optParameters = [
-        ('service', 's', None, 'The URL you were given to download.'),
+        ('onion', 'o', None, 'The onion URL you were given to download.'),
     ]
 
 @implementer(IAgentEndpointFactory)

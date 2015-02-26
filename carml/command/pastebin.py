@@ -197,7 +197,7 @@ class PasteBinCommand(object):
             print("For example, using carml:")
             print("")
             for client in clients:
-                print("  carml copybin --service tor:%s:authCookie=%s" % (client[0], client[1]))
+                print("  carml copybin --onion tor:%s:authCookie=%s" % (client[0], client[1]))
 
         else:
             print("People using Tor Browser Bundle can find your paste at (once the descriptor uploads):")
