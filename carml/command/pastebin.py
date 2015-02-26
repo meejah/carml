@@ -32,7 +32,7 @@ class PasteBinOptions(usage.Options):
     optParameters = [
         ('file', 'f', None, 'Filename to use as input (instead of stdin)'),
         ('count', 'n', None, 'Number of requests to serve.', int),
-        ('keys', 'n', 0, 'Number of authentication keys to create.', int),
+        ('keys', 'k', 0, 'Number of authentication keys to create.', int),
     ]
 
 

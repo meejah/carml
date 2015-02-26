@@ -8,6 +8,14 @@ This launches a new hidden-service to share some data as the
 data to share is read from stdin. You may also use the option
 ``--file`` (``-f``) to share a single file instead.
 
+To use stealth authentication on your hidden-service, you can pass the
+``--keys`` (``-k``) option which specifies how many authentication
+cookies to create. This will print out the commands you can send
+(**securely**!) to the people you want to share
+with. (**Experimental**: you'll need to get a ``txtorcon`` from the
+``stealth-authentication`` branch; ``pip install -e
+git+https://github.com/meejah/txtorcon.git@stealth-authentication#egg=txtorcon``)
+
 If you wish to serve an entire hierarchy of files as a Web site,
 instead see instructions at `txtorcon
 <https://txtorcon.readthedocs.org/en/latest/howtos.html#endpoints-enable-tor-with-any-twisted-service>`_
