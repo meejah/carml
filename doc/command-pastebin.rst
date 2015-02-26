@@ -60,3 +60,49 @@ Examples
     Mon Jul 21 13:54:38 2014: Serving request to User-Agent "curl/7.37.0".
     ^CShutting down.
     $
+
+If you used the stealth-authentication version, it might look like this:
+
+.. sourcecode:: shell-session
+
+    $ carml pastebin -f README.rst --keys 5
+    4573 bytes to share with 5 authenticated clients.
+    Launching Tor.
+    [▋         ] Connecting to directory server
+    [█▏        ] Finishing handshake with directory server
+    [█▋        ] Establishing an encrypted directory connection
+    [██▏       ] Asking for networkstatus consensus
+    ...
+    [███████▊  ] Loading relay descriptors
+    [███████▉  ] Loading relay descriptors
+    [████████▏ ] Connecting to the Tor network
+    [█████████▏] Establishing a Tor circuit
+    [██████████] Done
+    [██████████] Waiting for descriptor upload...
+    [██████████] At least one descriptor uploaded.
+    You requested stealth authentication.
+    Tor has created 5 keys; each key should be given to one person.
+    They can set one using the "HidServAuth" torrc option, like so:
+
+      HidServAuth ww2ufwkgxb2kag6t.onion ErQPDEHdNNprvWYCA2vTLR
+      HidServAuth f5kb64pe3nygyplx.onion HeemYe0TIoOzU/WkjJwP3R
+      HidServAuth ywhbfzepvss5hecm.onion 8JcZKcS8YQXMuYBF/G1z8x
+      HidServAuth pow2d55j6ezrruib.onion jK6/yXZ2R7xDsf3sm/PyVh
+      HidServAuth t7gnlwzw4hjxc45z.onion ezUZBaPmFYSzrGeZXYJfGh
+
+    Alternatively, any Twisted endpoint-aware client can be given
+    the following string as an endpoint:
+
+      tor:ww2ufwkgxb2kag6t.onion:authCookie=ErQPDEHdNNprvWYCA2vTLR
+      tor:f5kb64pe3nygyplx.onion:authCookie=HeemYe0TIoOzU/WkjJwP3R
+      tor:ywhbfzepvss5hecm.onion:authCookie=8JcZKcS8YQXMuYBF/G1z8x
+      tor:pow2d55j6ezrruib.onion:authCookie=jK6/yXZ2R7xDsf3sm/PyVh
+      tor:t7gnlwzw4hjxc45z.onion:authCookie=ezUZBaPmFYSzrGeZXYJfGh
+
+    For example, using carml:
+
+      carml copybin --onion tor:ww2ufwkgxb2kag6t.onion:authCookie=ErQPDEHdNNprvWYCA2vTLR
+      carml copybin --onion tor:f5kb64pe3nygyplx.onion:authCookie=HeemYe0TIoOzU/WkjJwP3R
+      carml copybin --onion tor:ywhbfzepvss5hecm.onion:authCookie=8JcZKcS8YQXMuYBF/G1z8x
+      carml copybin --onion tor:pow2d55j6ezrruib.onion:authCookie=jK6/yXZ2R7xDsf3sm/PyVh
+      carml copybin --onion tor:t7gnlwzw4hjxc45z.onion:authCookie=ezUZBaPmFYSzrGeZXYJfGh
