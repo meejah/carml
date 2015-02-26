@@ -32,6 +32,7 @@ class PasteBinOptions(usage.Options):
     optParameters = [
         ('file', 'f', None, 'Filename to use as input (instead of stdin)'),
         ('count', 'n', None, 'Number of requests to serve.', int),
+        ('keys', 'n', 0, 'Number of authentication keys to create.', int),
     ]
 
 
@@ -131,13 +132,7 @@ class PasteBinCommand(object):
             raise RuntimeError("Count should be 1 or greater.")
 
     def progress(self, percent, tag, message):
-        prog = util.pretty_progress(percent)
-        print('\b' * len(prog), end='')
-        if percent == 100:
-            print(util.colors.green('connected.      '))
-        else:
-            print(prog, end='')
-        sys.stdout.flush()
+        print(util.pretty_progress(percent), message)
 
     @defer.inlineCallbacks
     def run(self, options, mainoptions, connection):
@@ -150,14 +145,25 @@ class PasteBinCommand(object):
         else:
             to_share = sys.stdin.read()
 
-        print(len(to_share), "bytes to share.")
+        # stealth auth. keys
+        authenticators = []
+        if options['keys']:
+            for x in xrange(options['keys']):
+                authenticators.append('carml_%d' % x)
+
+        if len(authenticators):
+            print(len(to_share), "bytes to share with",
+                  len(authenticators), "authenticated clients.")
+        else:
+            print(len(to_share), "bytes to share.")
         sys.stdout.flush()
+
         if options['dry-run']:
             print('Not launching a Tor, listening on 8899.')
             ep = serverFromString(reactor, 'tcp:8899:interface=127.0.0.1')
         else:
-            print("Launching Tor:", util.pretty_progress(0), end='')
-            ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80)
+            print("Launching Tor.")
+            ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80, stealth_auth=authenticators)
             txtorcon.IProgressProvider(ep).add_progress_listener(self.progress)
 
         root = Resource()
@@ -166,9 +172,33 @@ class PasteBinCommand(object):
 
         count = 1 if options['once'] else options['count']
         port = yield ep.listen(PasteBinSite(root, max_requests=count))
+
+        # FIXME
+        clients = port.tor_config.hiddenservices[0].clients
+
         host = port.getHost()
         if options['dry-run']:
             print("Try it locally via http://127.0.0.1:8899")
+
+        elif len(clients):
+            print("You requested stealth authentication.")
+            print("Tor has created %d keys; each key should be given to one person." % len(clients))
+            print('They can set one using the "HidServAuth" torrc option, like so:')
+            print("")
+            for client in clients:
+                print("  HidServAuth %s %s" % (client[0], client[1]))
+            print("")
+            print("Alternatively, any Twisted endpoint-aware client can be given")
+            print("the following string as an endpoint:")
+            print("")
+            for client in clients:
+                print("  tor:%s:authCookie=%s" % (client[0], client[1]))
+            print("")
+            print("For example, using carml:")
+            print("")
+            for client in clients:
+                print("  carml copybin --service tor:%s:authCookie=%s" % (client[0], client[1]))
+
         else:
             print("People using Tor Browser Bundle can find your paste at (once the descriptor uploads):")
             print("\n   http://{0}\n".format(host.onion_uri))
@@ -176,23 +206,6 @@ class PasteBinCommand(object):
                 print("Type Control-C to stop serving and shut down the Tor we launched.")
             print("If you wish to keep the hidden-service keys, they're in (until we shut down):")
             print(ep.hidden_service_dir)
-
-        # FIXME this is colossally fragile (i.e. parsing INFO
-        # messages) but I can't think of or find a better way to
-        # determine "yes, we've uploaded our descriptor 1 time"
-        # "right way" is probably a new event or something in Tor
-        if not options['dry-run']:
-            print('Awaiting descriptor upload...')
-            # look for log messages indicating our hidden-sevice descriptor is published
-            config = yield txtorcon.get_global_tor(reactor)
-            got_upload = defer.Deferred()
-
-            def find_upload(msg):
-                if not got_upload.called and 'Uploaded rendezvous descriptor' in msg:
-                    got_upload.callback(msg)
-            config.protocol.add_event_listener('INFO', find_upload)
-            m = yield got_upload
-            print('Descriptor uploaded; hidden-service should be reachable.')
 
         reactor.addSystemEventTrigger('before', 'shutdown',
                                       lambda: print(util.colors.red('Shutting down.')))
