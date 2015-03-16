@@ -25,6 +25,7 @@ class CircOptions(usage.Options):
     optFlags = [
         ('list', 'L', 'List existing circuits.'),
         ('if-unused', 'u', 'When deleting, pass the IfUnused flag to Tor.'),
+        ('verbose', None, 'More information per circuit.'),
     ]
 
     optParameters = [
@@ -38,13 +39,13 @@ class CircOptions(usage.Options):
 
 
 @defer.inlineCallbacks
-def list_circuits(proto):
+def list_circuits(options, proto):
     print("Circuits:")
     state = txtorcon.TorState(proto)
     yield state.post_bootstrap
 
     now = datetime.datetime.utcnow()
-    util.dump_circuits(state, False)
+    util.dump_circuits(state, options['verbose'])
 
 
 @defer.inlineCallbacks
@@ -199,7 +200,7 @@ class CircCommand(object):
         """
 
         if options['list']:
-            return list_circuits(proto)
+            return list_circuits(options, proto)
 
         elif len(options['delete']) > 0:
             deletes = []
