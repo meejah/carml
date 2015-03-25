@@ -4,6 +4,7 @@ from StringIO import StringIO
 import json
 import platform
 import os
+import re
 import time
 import subprocess
 import shutil
@@ -348,11 +349,13 @@ class DownloadBundleCommand(object):
             print(data.getvalue())
             raise RuntimeError('Invalid JSON:\n%s' % data.getvalue())
 
-        print(util.wrap(', '.join(versions), 60, '  '))
-        alphas = filter(lambda x: 'alpha' in x, versions)
-        betas = filter(lambda x: 'beta' in x, versions)
-        others = set(versions).difference(alphas, betas)
+        alpha_re = re.compile(r'[0-9]*.[0-9]*a[0-9]-(Windows|MacOS|Linux)')
+        beta_re = re.compile(r'[0-9]*.[0-9]*b[0-9]-(Windows|MacOS|Linux)')
 
+        print(util.wrap(', '.join(versions), 60, '  '))
+        alphas = filter(lambda x: alpha_re.match(x), versions)
+        betas = filter(lambda x: beta_re.match(x), versions)
+        others = set(versions).difference(alphas, betas)
         if options['alpha']:
             versions = alphas
         elif options['beta']:
