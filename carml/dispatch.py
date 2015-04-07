@@ -211,5 +211,11 @@ def dispatch(args=None):
     d.addCallback(lambda arg: ICarmlCommand(sub).run(options.subOptions, options, arg))
     d.addErrback(setup_failed, options['debug'])
 
+    if options['debug']:
+        def dump_heap():
+            from guppy import hpy
+            print(hpy().heap())
+        d.addCallback(lambda _: dump_heap())
+
     # task.react needs a function that returns a Deferred
     task.react(lambda _: d)
