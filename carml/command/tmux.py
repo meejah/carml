@@ -56,11 +56,12 @@ class TmuxCommand(object):
 
         # because we asked not to load routers (for speed) we do have
         # to "update" the one's we'll be interested in.
-        routers = set()
-        for circ in state.circuits.values():
-            for r in circ.path:
-                routers.add(r.id_hex)
-        yield state.update_routers(routers)
+        if False:
+            routers = set()
+            for circ in state.circuits.values():
+                for r in circ.path:
+                    routers.add(r.id_hex)
+            yield state.update_routers(routers)
 
         for circ in state.circuits.values():
             if len(circ.streams) == 0:
