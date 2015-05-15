@@ -1,3 +1,4 @@
+--no-use-wheel
 # supports "peep"; see https://github.com/erikrose/peep
 # to use:
 #    virtualenv venv
@@ -14,11 +15,7 @@ humanize==0.5
 # sha256: dmRTC7mS44R7YeOqsVgLTfntAMWJjoAZSpkzvJyAlQo
 ansicolors==1.0.2
 
-# this is the hash for the .tar.gz file:
 # sha256: IGsb2KhAEZwS2bhdY4q53v7Fs3ZDb6Nr6ROasevIzXg
-# this is the hash for the .whl file (usually the winner):
-# sha256: Tk9qouxnf2wnv_QdF4iNMal59rgxogUBEBs5ypPt6do
-
 txtorcon>=0.12.0
 
 # should be 1.13.0.3 but distutils doesn't like that?!
