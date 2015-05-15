@@ -52,9 +52,8 @@ Twisted==15.0.0
 # sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
 #pyasn1==0.1.7
 
-## FIXME haven't looked at these (not sure why they're required)
 # sha256: 4mlkBKdFCS6SWgBnuxIj1O5aYqftkX4SBIH1377p-_I
-#characteristic==0.1.0
+characteristic==0.1.0
 
 # sha256: vmXwDtKOMHVvHvOTd8s4JICiNoaZF51kaoTXn-k0mUE
-#pyasn1_modules==0.0.5
+pyasn1_modules==0.0.5
