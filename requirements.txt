@@ -15,8 +15,8 @@ humanize==0.5
 # sha256: dmRTC7mS44R7YeOqsVgLTfntAMWJjoAZSpkzvJyAlQo
 ansicolors==1.0.2
 
-# sha256: IGsb2KhAEZwS2bhdY4q53v7Fs3ZDb6Nr6ROasevIzXg
-txtorcon>=0.12.0
+# sha256: MhjQ-gwi9J7ukySlhistU-931cuOVV4rz_wkBwquyn0
+txtorcon==0.13.0
 
 # should be 1.13.0.3 but distutils doesn't like that?!
 # sha256: 3xqecGLH42k8OZU3BbdeD-t7h0agUTX_srjNmHCMnEM
@@ -31,13 +31,13 @@ zope.interface==4.0.5
 # sha256: qZ245ZwSATitinLuztzCS0UQ0u7TzkghO34y8izE7m4
 pyOpenSSL==0.14
 
-# sha256: xOCXlMVCKaTSv2p4QTCIAlnwsIcNL0DpcS3EEU8GeVw
+# sha256: MQWjGafFWEkGZmlPWZvgw3etVIJO77QEzeTOSedKT1o
 service_identity==14.0.0
 
 # sha256: Xvgd5EyHqHd5cQy7R2_77IakpsC9Klvr7Mw7-zw0eOU
 cryptography==0.4
 
-# sha256: M4j8GiynpdQmG00ePYtzQsv0vxz7NwIxHGCTIUMs7Xg
+# sha256: eoQsn4gsCyqxBk1We7n_9qIcnvvD2Zkgg61hk3h-05M
 six==1.7.3
 
 # sha256: gZI5NkD3vDBM6CZps165BZJWajCru0kkRW9SB5r8GOI
@@ -52,7 +52,7 @@ Twisted==15.0.0
 # sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
 #pyasn1==0.1.7
 
-# sha256: 4mlkBKdFCS6SWgBnuxIj1O5aYqftkX4SBIH1377p-_I
+# sha256: 1HD6xIrMvKQQOKMhq9DBp0KL7vXOXYCx1t-5dxMFkGo
 characteristic==0.1.0
 
 # sha256: vmXwDtKOMHVvHvOTd8s4JICiNoaZF51kaoTXn-k0mUE
