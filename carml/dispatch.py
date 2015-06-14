@@ -9,7 +9,7 @@ from twisted.internet import reactor, defer, endpoints, task
 from zope.interface import implements
 import txtorcon
 
-from .interface import ICarmlCommand
+from carml.interface import ICarmlCommand
 import carml.util as util
 import carml
 
