@@ -10,6 +10,9 @@
 # verified the same hashes. so take those with salt.
 # "peep hash <file>" will produce a hash for you.
 
+# NOTE that you must install pip==6.1.1 in order for peep to work (it
+# doesn't yet work with pip 7+)
+
 # sha256: 5Rv5lWUR5YaTgB_IiVybQBI2O_nwvKLzwndxELP_aLw
 humanize==0.5
 # sha256: dmRTC7mS44R7YeOqsVgLTfntAMWJjoAZSpkzvJyAlQo

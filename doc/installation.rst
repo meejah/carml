@@ -35,13 +35,14 @@ type ``make venv``. Then activate your new virtualenv with ``source
 ./venv/bin/activate`` and then ``pip install --editable .`` which
 should install all the dependencies (listed in ``requirements.txt``).
 
-To do this and use ``peep``, do something like this (from the root of
-a fresh clone):
+To do this and use ``peep``, you need pip version 6.1.1. So, you you
+can try something like this (from the root of a fresh clone):
 
 .. sourcecode:: shell-session
 
    virtualenv venv
    . ./venv/bin/activate
+   pip install --upgrade pip==6.1.1
    pip install peep
    peep install -r requirements.txt
    pip install --editable .
@@ -57,7 +58,7 @@ The main dependencies are:
 Optionally, to use the :ref:`downloadbundle` command via Tor, you
 need:
 
- * `txsocksx <https://github.com/habnabit/txsocksx>`_ 
+ * `txsocksx <https://github.com/habnabit/txsocksx>`_
  * `backports.lzma <https://github.com/peterjc/backports.lzma>`_
 
 
@@ -95,7 +96,7 @@ not, add yourself (as root, do):
 
     # usermod username --append --groups debian-tor
 
-If you changed tor's configuration, don't forget to tell it (as
+If you changed Tor's configuration, don't forget to tell it (as
 root):
 
 .. code-block:: console

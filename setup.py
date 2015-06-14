@@ -16,7 +16,7 @@ def pip_to_requirements(s):
     Change a PIP-style requirements.txt string into one suitable for setup.py
     """
 
-    if s.startswith('#'):
+    if s.startswith('#') or s.startswith('--'):
         return ''
     m = re.match('(.*)([>=]=[.0-9]*).*', s)
     if m:
