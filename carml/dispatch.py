@@ -52,7 +52,7 @@ class LogObserver(object):
             out.flush()
 
 _log_observer = LogObserver()
-log.startLoggingWithObserver(_log_observer, setStdout=True)
+log.startLoggingWithObserver(_log_observer, setStdout=False)
 
 
 class Options(usage.Options):
@@ -134,7 +134,7 @@ def general_information(proto_or_state, verbose):
 def setup_failed(e, debug):
     print(util.colors.red('Error: ') + e.getErrorMessage(), file=sys.stderr)
     if debug:
-        print(e)
+        e.printTraceback(file=sys.stderr)
     # twisted seems to get grumpy if you do reactor.stop inside an
     # errback.
     reactor.callLater(0, reactor.stop)
