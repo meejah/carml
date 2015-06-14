@@ -42,10 +42,13 @@ can try something like this (from the root of a fresh clone):
 
    virtualenv venv
    . ./venv/bin/activate
-   pip install --upgrade pip==6.1.1
-   pip install peep
+   pip install --upgrade pip==6.1.1 peep
    peep install -r requirements.txt
    pip install --editable .
+
+(If you want to ensure pip doesn't decide to download something in the
+last step, add ``--proxy localhost:77777`` or similar nonesense
+endpoint because ``--no-download`` is now deprecated it turns out)
 
 
 The main dependencies are:
