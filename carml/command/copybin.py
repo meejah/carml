@@ -27,7 +27,7 @@ class CopyBinOptions(usage.Options):
     ]
 
     optParameters = [
-        ('onion', 'o', None, 'The onion URL you were given to download.'),
+        ('service', 's', None, 'The endpoint you were given to download from.'),
     ]
 
 @implementer(IAgentEndpointFactory)
@@ -73,7 +73,8 @@ class CopyBinCommand(object):
 
     def validate(self, options, mainoptions):
         "ICarmlCommand API"
-        pass
+        if not options['service']:
+            raise RuntimeError("--service option required")
 
     @defer.inlineCallbacks
     def run(self, options, mainoptions, proto):
