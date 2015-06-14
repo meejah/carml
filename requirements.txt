@@ -35,7 +35,7 @@ zope.interface==4.0.5
 pyOpenSSL==0.14
 
 # sha256: MQWjGafFWEkGZmlPWZvgw3etVIJO77QEzeTOSedKT1o
-service_identity==14.0.0
+service-identity==14.0.0
 
 # sha256: Xvgd5EyHqHd5cQy7R2_77IakpsC9Klvr7Mw7-zw0eOU
 cryptography==0.4
@@ -49,8 +49,11 @@ cffi==0.8.2
 # sha256: lX2YtmHAtktYCrb5SxJeCbZxQVTuUd5AvKFtPwB2uGw
 pycparser==2.10
 
-# sha256: rGCSYiUwV88q653ASbp4d9ZG8xtMrvBqUBiaAj30a1E
-Twisted==15.0.0
+# sha256: z8MoQR7VJjKrjnrgLLwUIsUfW9Or-RlAXM9k1hLLsT0
+Twisted==15.2.1
+
+# sha256: UNMM7nB3D9RNt86kIcsvt1ryR8OhzVSIXAazCnyF3SM
+Parsley==1.2
 
 # sha256: 5PgdU8Uz9r2VJrBH8Ef3sQHCSrFzOcGnrY-YslwQHqs
 #pyasn1==0.1.7

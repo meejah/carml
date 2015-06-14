@@ -28,12 +28,7 @@ setup(name = 'carml',
       description = 'A command-line tool to query and control a running Tor. Based on txtorcon + Twisted.',
       long_description = open('README.rst', 'r').read(),
       keywords = ['python', 'twisted', 'tor', 'command-line', 'cli'],
-      ## way to have "development requirements"?
-      requires = filter(len, map(pip_to_requirements, 
-                                 open('requirements.txt').readlines())),
-      ## FIXME is requires even doing anything? why is format
-      ## apparently different for install_requires?
-      install_requires = filter(lambda x: not x.startswith('#'), open('requirements.txt').readlines()),
+      install_requires = [line for line in open('requirements.txt').readlines() if not line.startswith('#') and not line.startswith('--')],
       classifiers = ['Framework :: Twisted',
                      'Development Status :: 2 - Pre-Alpha',
                      'Environment :: Console',
