@@ -20,6 +20,7 @@ from twisted.internet import reactor, defer, ssl, endpoints, error
 from twisted.internet._sslverify import PublicKey
 from twisted.internet.protocol import Protocol
 from twisted.web.client import Agent, ProxyAgent, RedirectAgent, ResponseDone, ResponseFailed
+from twisted.web.iweb import IPolicyForHTTPS
 from twisted.web.http_headers import Headers
 
 from carml.interface import ICarmlCommand
@@ -56,6 +57,7 @@ class DownloadBundleOptions(usage.Options):
 # Twisted 14.0.0 can "just do" chain verification, I believe
 # at *least* verify this does a similar thing, or just depend on >=14
 # and delete it
+@zope.interface.implementer(IPolicyForHTTPS)
 class VerifyCertChainContextFactory(ssl.ClientContextFactory):
     def __init__(self, cert_chain):
         '''
@@ -71,7 +73,13 @@ class VerifyCertChainContextFactory(ssl.ClientContextFactory):
             for i in range(len(self.chain)):
                 print('%d: %s' % (i, self.chain[i].getSubject()))
 
-    def getContext(self, host, port):
+    def creatorForNetloc(self, hostname, port):
+        # this should return a "creator" for the given hostname/port
+        # -- we always return ourself because we only verify for a
+        # single cert-chain so don't care what host we're visiting.
+        return self
+
+    def getContext(self):
         ctx = OpenSSL.SSL.Context(OpenSSL.SSL.TLSv1_METHOD)
 
         # load just the DigiCert root as "the" certificate store
@@ -264,9 +272,8 @@ def extract_7zip(fname):
     return None
 
 
+@zope.interface.implementer(ICarmlCommand, IPlugin)
 class DownloadBundleCommand(object):
-    zope.interface.implements(ICarmlCommand, IPlugin)
-
     name = 'downloadbundle'
     help_text = """Download the lastest Tor Browser Bundle (with pinned SSL certificates) and check the signatures."""
     controller_connection = False
