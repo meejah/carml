@@ -435,7 +435,7 @@ class DownloadBundleCommand(object):
 
             # running instructions
             lang = dist_fname[-12:-7]
-            print("   ./tor-browser_%s/start-tor-browser" % lang)
+            print("   ./tor-browser_%s/Browser/start-tor-browser" % lang)
 
         else:
             print(util.colors.bold('Deleting tarball; signature verification failed.'))
