@@ -201,7 +201,7 @@ class ResponseReceiver(Protocol):
                 units = unit
                 estimate = self.total / velocity
                 left = estimate - elapsed
-                print('%2d%%: %.1f of %.1f %s (%ds remaining)' % (howmuch, cur, tot, units, left))
+                print('%s - %.1f of %.1f %s (%ds remaining)' % (util.pretty_progress(howmuch, 5), cur, tot, units, left))
                 if self.current == self.total:
                     print('%0.2f MiB/s' % (self.total / (1024.0 * 1024) / elapsed))
 
@@ -371,9 +371,9 @@ class DownloadBundleCommand(object):
             versions = others
 
         if alphas:
-            print("Note: there are alpha versions available; use --alpha to download.")
+            print(util.colors.yellow("Note: there are alpha versions available; use --alpha to download."))
         if betas:
-            print("Note: there are beta versions available; use --beta to download.")
+            print(util.colors.yellow("Note: there are beta versions available; use --beta to download."))
 
         target_version = None
         for v in versions:
