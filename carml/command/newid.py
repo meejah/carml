@@ -28,14 +28,14 @@ def newid_no_signal(left, all_done):
         print('Waiting %d more seconds.' % left)
         reactor.callLater(1, newid_no_signal, left - 1, all_done)
     else:
-        all_done.errback(RuntimeError('no acknowledment in 10 seconds.'))
+        all_done.errback(RuntimeError('no acknowledgement in 10 seconds.'))
 
 
 @zope.interface.implementer(ICarmlCommand)
 class NewidCommand(object):
     # Attributes specified by ICarmlCommand
     name = 'newid'
-    help_text = 'Ask Tor for a new identity via NEWNYM, and lisent for the response acknowledgement.'
+    help_text = 'Ask Tor for a new identity via NEWNYM, and listen for the response acknowledgement.'
     controller_connection = True
     build_state = False
     options_class = NewidOptions
