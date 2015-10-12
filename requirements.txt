@@ -20,9 +20,7 @@ ansicolors==1.0.2
 
 txtorcon>=0.14.0
 
-# should be 1.13.0.3 but distutils doesn't like that?!
-# sha256: 3xqecGLH42k8OZU3BbdeD-t7h0agUTX_srjNmHCMnEM
-txsocksx>=1.13.0
+txsocksx==1.15.0.2
 
 # sha256: usWK7I05rD0iJQhA-ySDDQ5KDvBa2PPwkXLcDMgM28o
 backports.lzma==0.0.3
