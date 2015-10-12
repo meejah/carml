@@ -11,13 +11,20 @@ __url__ = 'https://github.com/meejah/carml'
 __license__ = 'Public Domain (http://unlicense.org/)'
 __copyright__ = 'Copyright 2014'
 
+
+requirements = [line.strip() for line in open('requirements.txt').readlines() if not line.startswith('#') and not line.startswith('--') and line.strip()]
+print "DING", requirements
+
 setup(
     name='carml',
     version=__version__,
     description='A command-line tool to query and control a running Tor. Based on txtorcon + Twisted.',
     long_description=open('README.rst', 'r').read(),
     keywords=['python', 'twisted', 'tor', 'command-line', 'cli'],
-    install_requires=[line for line in open('requirements.txt').readlines() if not line.startswith('#') and not line.startswith('--')],
+    install_requires=requirements,
+    dependency_links=[
+        'git+https://github.com/meejah/txtorcon.git@7d96607b764d1ffe71bc7f5a022668292aef7c2a#egg=txtorcon'
+    ],
     classifiers=[
         'Framework :: Twisted',
         'Development Status :: 2 - Pre-Alpha',

@@ -18,8 +18,7 @@ humanize==0.5
 # sha256: dmRTC7mS44R7YeOqsVgLTfntAMWJjoAZSpkzvJyAlQo
 ansicolors==1.0.2
 
-# sha256: MhjQ-gwi9J7ukySlhistU-931cuOVV4rz_wkBwquyn0
-txtorcon==0.13.0
+txtorcon>=0.14.0
 
 # should be 1.13.0.3 but distutils doesn't like that?!
 # sha256: 3xqecGLH42k8OZU3BbdeD-t7h0agUTX_srjNmHCMnEM

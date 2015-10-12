@@ -8,7 +8,7 @@ from twisted.python import usage, log
 from twisted.plugin import IPlugin
 from twisted.internet import reactor
 from twisted.internet import defer
-from twisted.internet.endpoints import serverFromString
+from twisted.internet.endpoints import serverFromString, clientFromString
 from twisted.web.http import HTTPChannel
 from twisted.web.static import Data
 from twisted.web.resource import Resource
@@ -123,7 +123,7 @@ class PasteBinCommand(object):
     name = 'pastebin'
     help_text = """Put stdin (or a file) on a fresh hidden-service easily."""
     build_state = False
-    controller_connection = False
+    controller_connection = True
     options_class = PasteBinOptions
 
     def validate(self, options, mainoptions):
@@ -161,10 +161,13 @@ class PasteBinCommand(object):
         if options['dry-run']:
             print('Not launching a Tor, listening on 8899.')
             ep = serverFromString(reactor, 'tcp:8899:interface=127.0.0.1')
-        else:
+        elif True:#connection is None:
             print("Launching Tor.")
             ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80, stealth_auth=authenticators)
             txtorcon.IProgressProvider(ep).add_progress_listener(self.progress)
+        else:
+            config = yield txtorcon.TorConfig.from_connection(connection)
+            ep = txtorcon.TCPEphemeralHiddenServiceEndpoint(reactor, config, 80)
 
         root = Resource()
         data = Data(to_share, 'text/plain')
