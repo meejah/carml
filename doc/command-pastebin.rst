@@ -12,9 +12,7 @@ To use stealth authentication on your hidden-service, you can pass the
 ``--keys`` (``-k``) option which specifies how many authentication
 cookies to create. This will print out the commands you can send
 (**securely**!) to the people you want to share
-with. (**Experimental**: you'll need to get a ``txtorcon`` from the
-``stealth-authentication`` branch; ``pip install -e
-git+https://github.com/meejah/txtorcon.git@stealth-authentication#egg=txtorcon``)
+with.
 
 If you wish to serve an entire hierarchy of files as a Web site,
 instead see instructions at `txtorcon
