@@ -144,6 +144,9 @@ class VerifyCertChainContextFactory(ssl.ClientContextFactory):
         # this whole "verify" callback stack early when one cert
         # fails?
 
+        # correct way is to compare hashes (then we only have to store
+        # the hash of the public cert, not the actual thing)
+
         verify_pubkey = PublicKey(cert.get_pubkey())
         golden_pubkey = self.chain[depth].getPublicKey()
         if DEBUG:
