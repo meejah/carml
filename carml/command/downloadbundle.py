@@ -40,10 +40,12 @@ class DownloadBundleOptions(usage.Options):
     optFlags = [
         ('beta', 'b', 'Use the beta release (if available).'),
         ('alpha', 'a', 'Use the alpha release (if available).'),
+#        ('hardened', 'H', 'Use a hardened release (if available).'),
         ('use-clearnet', '', 'Do the download over plain Internet, NOT via Tor (NOT RECOMMENDED).'),
         ('system-keychain', 'K', 'Instead of creating a temporary keychain with provided Tor keys, '
          "use the current user\'s existing GnuPG keychain."),
         ('no-extract', 'E', 'Do not extract after downloading.'),
+        ('no-launch', 'L', 'Do not launch TBB after downloading.'),
     ]
 
     optParameters = []
@@ -361,11 +363,15 @@ class DownloadBundleCommand(object):
 
         alpha_re = re.compile(r'[0-9]*.[0-9]*a[0-9]-(Windows|MacOS|Linux)')
         beta_re = re.compile(r'[0-9]*.[0-9]*b[0-9]-(Windows|MacOS|Linux)')
+        hardened_re = re.compile(r'(.*)-hardened-(.*)')
 
         print(util.wrap(', '.join(versions), 60, '  '))
         alphas = filter(lambda x: alpha_re.match(x), versions)
         betas = filter(lambda x: beta_re.match(x), versions)
-        others = set(versions).difference(alphas, betas)
+        # the 'hardened' browser names don't follow the pattern of the
+        # others; for now, just ignoring them... (XXX FIXME)
+        hardened = filter(lambda x: hardened_re.match(x), versions)
+        others = set(versions).difference(alphas, betas, hardened)
         if options['alpha']:
             versions = alphas
         elif options['beta']:
@@ -377,6 +383,8 @@ class DownloadBundleCommand(object):
             print(util.colors.yellow("Note: there are alpha versions available; use --alpha to download."))
         if betas:
             print(util.colors.yellow("Note: there are beta versions available; use --beta to download."))
+        if hardened:
+            print(util.colors.yellow("Note: there are hardened versions available but we don't support downloading them yet."))
 
         target_version = None
         for v in versions:
@@ -438,7 +446,12 @@ class DownloadBundleCommand(object):
 
             # running instructions
             lang = dist_fname[-12:-7]
-            print("   ./tor-browser_%s/Browser/start-tor-browser" % lang)
+            tbb_path = './tor-browser_%s/Browser/start-tor-browser' % lang
+            if options['no-launch']:
+                print("To run: %s" % tbb_path)
+            else:
+                print("running: %s" % tbb_path)
+                os.execl(tbb_path, tbb_path)
 
         else:
             print(util.colors.bold('Deleting tarball; signature verification failed.'))
