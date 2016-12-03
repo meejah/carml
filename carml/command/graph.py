@@ -67,8 +67,10 @@ class BandwidthTracker(object):
         kbup = self._bandwidth[-1][1] / 1024.0
         kbdn = self._bandwidth[-1][0] / 1024.0
 
-        status = ' ' + colors.green('%.2f' % kbdn) + '/' # + ' KiB read'
-        status += ', ' + colors.red('%.2f' % kbup) # + ' KiB write'
+        status = ' ' + colors.green('%.2f' % kbdn)
+        status += '/'
+        status += colors.red('%.2f' % kbup) # + ' KiB write'
+        status += ' KiB/s'
         status += ' (%d streams, %d circuits)' % (self.streams(), self.circuits())
 
         # include the paths of any currently-active streams

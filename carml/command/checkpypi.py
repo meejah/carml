@@ -31,12 +31,12 @@ class CheckPyPIOptions(usage.Options):
     """
 
     optFlags = [
-        ]
+    ]
 
     optParameters = [
         ('package', 'p', None, 'Name of the package to check (unfortunately, case matters)', str),
         ('revision', 'r', None, 'Specific version to check (default: latest)', str),
-        ]
+    ]
 
 
 @implementer(ICarmlCommand)
@@ -117,9 +117,13 @@ class CheckPyPICommand(object):
         # download the distribution over several different circuits,
         # and record the sha256 hash each time.
         digests = []
-        for x in range(3):
+        while len(digests) < 3:
             circ = yield state.build_circuit()
-            yield circ.is_built
+            try:
+                yield circ.when_built()
+            except Exception:
+                print "Circuit failed; trying another."
+                continue
             attach.circ = circ
             print "Built circuit"
 

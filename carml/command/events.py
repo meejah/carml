@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import sys
+import time
 import functools
 
 import zope.interface
@@ -66,14 +67,14 @@ class EventsCommand(object):
         elif evt:
             print("{}: {}".format(evt, msg))
         else:
-            print(msg)
+            ts = time.asctime()
+            print("{} {}".format(ts, msg))
 
     @defer.inlineCallbacks
     def run(self, options, mainoptions, proto):
         all_events = yield proto.get_info('events/names')
-        all_events = all_events['events/names'].split()
         if options['list']:
-            for e in all_events:
+            for e in all_events['events/names'].split():
                 print(e)
             return
 
@@ -84,7 +85,7 @@ class EventsCommand(object):
 
         for e in options['events']:
             e = e.upper()
-            if e not in all_events:
+            if e not in all_events['events/names']:
                 print("Invalid event:", e)
                 return
             if options['show-event']:

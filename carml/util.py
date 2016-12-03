@@ -103,7 +103,7 @@ def format_net_location(loc, verbose_asn=False):
     if loc.city and loc.city[0]:
         if comma:
             rtn += ', '
-        rtn += ','.join(loc.city)
+        rtn += ','.join([x.decode('utf8', 'replace') for x in loc.city])
         comma = True
     return rtn.strip() + ')'
 

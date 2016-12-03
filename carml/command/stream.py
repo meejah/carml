@@ -8,6 +8,7 @@ from twisted.python import usage, log
 from twisted.internet import defer, reactor
 import zope.interface
 import txtorcon
+import humanize
 
 from carml.interface import ICarmlCommand
 from carml import util
@@ -22,6 +23,7 @@ class StreamOptions(usage.Options):
 
     optFlags = [
         ('list', 'L', 'List existing streams.'),
+        ('follow', 'f', 'Follow stream creation.'),
         # ('per-process', 'p', 'Attach all new streams to one circuit, per PID.'),
     ]
 
@@ -164,6 +166,155 @@ def close_stream(state, streamid):
     # that our stream has entered state CLOSED
 
 
+class StreamBandwidth(object):
+    """
+    The bandwidth-events of a single stream
+    """
+    #__slots__ = ['_events']
+
+    def __init__(self, max_live=20, roll_up=5):
+        self._events = []  # list of 3-tuples
+        self._history = []
+        self.max_live = max_live
+        self.roll_up = roll_up
+
+        # XXX we could recursively roll-up too, i.e. spill from one
+        # bucket to the next. but, for now, there are precisely two
+        # bucks: the "current", and the first one containing (avg,
+        # min, max) etc
+
+    def add_bandwidth(self, epoch, read, write):
+        self._events.append((epoch, read, write))
+        self._maybe_truncate()
+
+    def _maybe_truncate(self):
+        """
+        If we've gone past our max_live amount by at least roll_up events,
+        we push it into the history (possibly also truncating that).
+        """
+        # XXX should we examine seconds here instead? i.e. have a
+        # max-seconds (instead of going by event-count)?
+        if len(self._events) > self.max_live + self.roll_up:
+            rolling = self._events[:self.roll_up]
+            self._events = self._events[self.roll_up:]
+            duration = float(self._events[0][0] - rolling[0][0])
+            mean_r = sum(x[1] for x in rolling) / duration
+            mean_w = sum(x[2] for x in rolling) / duration
+            
+            # XXX should append some smarter-er object instead of tuple?
+            # (start, duration, mean_r, mean_w, max_r, max_w)
+            self._history.append(
+                (
+                    rolling[0][0],
+                    duration,
+                    mean_r, mean_w,
+                    max(x[1] for x in rolling),
+                    max(x[2] for x in rolling),
+                )
+            )
+            self._history = self._history[-10:]
+            print("HISTORY NOW", self._history)
+            print("age {}, total bw {}".format(
+                self._events[-1][0] - (self._history[-1][0] + self._history[-1][1]),
+                sum([sum(x[1:]) for x in self._history]),
+            ))
+
+    def bytes_read(self):
+        return sum(event[1] for event in self._events)
+
+    def bytes_written(self):
+        return sum(event[2] for event in self._events)
+
+    def duration(self):
+        if not self._events:
+            return 0.0
+        if len(self._events) == 1:
+            return 1.0
+        return float(self._events[-1][0] - self._events[0][0]) + 1.0
+
+    def rate(self):
+        span = self.duration()
+        if span == 0.0:
+            return (0.0, 0.0)  # mmm...pragmatism
+        return (self.bytes_read() / span, self.bytes_written() / span)
+
+
+class BandwidthMonitor(txtorcon.StreamListenerMixin):
+    @staticmethod
+    @defer.inlineCallbacks
+    def create(reactor, state):
+        bw = BandwidthMonitor(reactor, state)
+        yield bw._setup()
+        defer.returnValue(bw)
+
+    def __init__(self, reactor, state):
+        self._reactor = reactor  # just IReactorClock required?
+        self._state = state
+        self._active = {}  # maps stream ID -> list-of-tuples
+
+    def stream_new(self, stream):
+        print("new", stream)
+        self._active[stream.id] = StreamBandwidth()
+
+    def stream_succeeded(self, stream):
+        # i think this happens when it *starts* passing data?
+        print("succeeded", stream, stream.target_host, stream.target_addr)
+        try:
+            print("BOOM:", self._state.addrmap.find(stream.target_host).name)
+        except KeyError:
+            print("unfound", stream.target_host)
+
+    def stream_attach(self, stream, circuit):
+        pass #print("attach", stream)
+
+    def stream_detach(self, stream, **kw):
+        pass #print("detach", stream)
+
+    def stream_closed(self, stream, **kw):
+        # print("closed", stream, self._active)
+        if not stream.id in self._active:
+            print(
+                "Previously unknown stream to {stream.target_host} died".format(
+                    stream=stream,
+                )
+            )
+        else:
+            bw = self._active[stream.id]
+            print(
+                "Stream {stream.id} to {stream.target_host}: {read} read, {written} written in {duration:.1f}s ({read_rate})".format(
+                    stream=stream,
+                    read=util.colors.green(humanize.naturalsize(bw.bytes_read())),
+                    written=util.colors.red(humanize.naturalsize(bw.bytes_written())),
+                    read_rate=humanize.naturalsize(sum(bw.rate())) + '/s',
+                    duration=bw.duration(),
+                )
+            )
+
+    def stream_failed(self, stream, **kw):
+        pass
+
+    def _stream_bw(self, bw):
+        #print("STREAM BW", bw)
+        sid, wr, rd = [int(x) for x in bw.split()]
+        try:
+            bandwidth = self._active[sid]
+        except KeyError:
+            bandwidth = self._active[sid] = StreamBandwidth()
+        bandwidth.add_bandwidth(self._reactor.seconds(), rd, wr)
+
+    @defer.inlineCallbacks
+    def _setup(self):
+        yield self._state.add_stream_listener(self)
+        yield self._state.protocol.add_event_listener('STREAM_BW', self._stream_bw)
+
+
+@defer.inlineCallbacks
+def monitor_streams(state, verbose):
+    print("monitor", state, verbose)
+    from twisted.internet import reactor
+    bw = yield BandwidthMonitor.create(reactor, state)
+
+
 class StreamCommand(object):
     zope.interface.implements(ICarmlCommand)
 
@@ -175,7 +326,7 @@ class StreamCommand(object):
     build_state = True
 
     def validate(self, options, mainoptions):
-        cmds = ['attach', 'list', 'close']  # , 'per-process']
+        cmds = ['attach', 'list', 'close', 'follow']  # , 'per-process']
         not_a_one = all(map(lambda x: not options[x], cmds))
         if not_a_one:
             raise RuntimeError("Specify one of: " + ', '.join(cmds))
@@ -197,6 +348,11 @@ class StreamCommand(object):
         elif options['close']:
             d = close_stream(state, options['close'])
             d.addBoth(lambda x: reactor.stop())
+            return d
+        elif options['follow']:
+            d = defer.succeed(None)
+            d.addCallback(lambda _: monitor_streams(state, verbose))
+            d.addCallback(lambda _: defer.Deferred())
             return d
 
         reactor.stop()

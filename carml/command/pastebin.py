@@ -163,7 +163,7 @@ class PasteBinCommand(object):
             ep = serverFromString(reactor, 'tcp:8899:interface=127.0.0.1')
         elif True:#connection is None:
             print("Launching Tor.")
-            ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80, stealth_auth=authenticators)
+            ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80)#, stealth_auth=authenticators)
             txtorcon.IProgressProvider(ep).add_progress_listener(self.progress)
         else:
             config = yield txtorcon.TorConfig.from_connection(connection)
