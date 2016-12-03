@@ -5,7 +5,7 @@ Note (for PyPI or development installs) you'll need to install
 ``libffi`` development libraries. How to do this on various
 architectures (please send missing ones!):
 
- * Debian + Ubuntu: ``apt-get install libffi-dev``.
+ * Debian + Ubuntu: ``apt-get install libffi-dev liblzma-dev``.
 
 
 PyPI

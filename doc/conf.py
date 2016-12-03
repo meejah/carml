@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.join(os.path.split(__file__)[0], '_themes'))
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'carml.click_autodoc',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
