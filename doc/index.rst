@@ -4,10 +4,10 @@
 .. toctree::
    :maxdepth: 2
 
-.. warning:: This is early-Alpha code. "Release early, release often"
-   gives you a chance to try things out at the expense of the very
-   real possibility of **serious, anonymity-destroying bugs!** (Please
-   report them using github)
+.. note:: This code is intended as utilities mostly to help developers
+          and Tor experts interact with their systems. Nobody has
+          audited it for anonymitiy leaks (or worse). Use at your own
+          risk.
 
 
 carml

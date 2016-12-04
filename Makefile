@@ -1,10 +1,9 @@
 .PHONY: doc certs
-VERSION = 0.0.6
+VERSION = 16.0.0
 
 venv:
 	virtualenv venv
-	./venv/bin/pip install peep
-	./venv/bin/peep install -r requirements.txt
+	./venv/bin/pip install -U pip
 	./venv/bin/pip install --editable .
 
 doc:

@@ -4,12 +4,12 @@ import shutil
 import re
 from setuptools import setup, find_packages
 
-__version__ = '0.0.6'
+__version__ = '16.0.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/carml'
 __license__ = 'Public Domain (http://unlicense.org/)'
-__copyright__ = 'Copyright 2014'
+__copyright__ = 'Copyright 2014 - 2016'
 
 
 requirements = [line.strip() for line in open('requirements.txt').readlines() if not line.startswith('#') and not line.startswith('--') and line.strip()]

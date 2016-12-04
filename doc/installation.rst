@@ -2,8 +2,8 @@ Installing carml
 ----------------
 
 Note (for PyPI or development installs) you'll need to install
-``libffi`` development libraries. How to do this on various
-architectures (please send missing ones!):
+``libffi`` and ``liblzma`` development libraries. How to do this on
+various architectures (please send missing ones!):
 
  * Debian + Ubuntu: ``apt-get install libffi-dev liblzma-dev``.
 
@@ -11,8 +11,8 @@ architectures (please send missing ones!):
 PyPI
 ====
 
-Once you have ``libffi`` installed as above, you should be able to do
-a simple ``pip install carml``. It's also possible to point to the
+Once you have libraries installed as above, you should be able to do a
+simple ``pip install carml``. It's also possible to point to the
 ``.whl`` file (after signature verification).
 
 To try without affecting system packages:
