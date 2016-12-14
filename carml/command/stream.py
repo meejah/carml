@@ -6,7 +6,7 @@ import functools
 
 from twisted.python import usage, log
 from twisted.internet import defer, reactor
-import zope.interface
+from zope.interface import implementer
 import txtorcon
 import humanize
 
@@ -37,8 +37,8 @@ def attach_streams_per_process(state):
     print("Exiting (e.g. Ctrl-C) will cause Tor to resume choosing circuits.")
     print("Giving each new PID we see its own Circuit (until they're gone).")
 
+    @implementer(txtorcon.IStreamAttacher)
     class Attacher(object):
-        zope.interface.implements(txtorcon.IStreamAttacher)
 
         def __init__(self):
             self.pid_to_circuits = {}
@@ -75,15 +75,36 @@ def attach_streams_per_process(state):
 
 
 def attach_streams_to_circuit(circid, state):
-    circ = state.circuits[circid]
+    try:
+        circ = state.circuits[circid]
+    except KeyError:
+        print("Circuit {} doesn't exist.".format(circid))
+        return None
     print("Exiting (e.g. Ctrl-C) will cause Tor to resume choosing circuits.")
     print("Attaching all new streams to Circuit %d." % circ.id)
     print("   ", '->'.join([p.name if p.name_is_unique else ('~%s' % p.name) for p in circ.path]))
 
-    class Attacher(object):
-        zope.interface.implements(txtorcon.IStreamAttacher)
+    @implementer(txtorcon.IStreamAttacher)
+    class Attacher(txtorcon.CircuitListenerMixin):
+
+        def circuit_closed(self, this_circ, **kw):
+            if circ == this_circ:
+                print("Circuit {} vanished (REASON={}, REMOTE_REASON={})".format(
+                    circ.id,
+                    kw.get('REASON', 'not specified'),
+                    kw.get('REMOTE_REASON', 'not specified'),
+                ))
+                # should we just exit now?
+                # Pro: kind-of makes sense
+                # Con: if you're expecting streams to go via "your"
+                # circuit, maybe you want them to "fail closed" and
+                # not work at all -- which is what I'm doing right now
+                # so -> probably want exiting to be an option, and not the default
 
         def attach_stream(self, stream, circuits):
+            if circ.state == 'CLOSED':
+                print("  target circuit is closed, not attaching")
+                return txtorcon.TorState.DO_NOT_ATTACH
             if stream.state == 'NEWRESOLVE':
                 print("  attaching %d (resolve %s)" % (stream.id, stream.target_host))
             else:
@@ -91,7 +112,9 @@ def attach_streams_to_circuit(circid, state):
                                                 stream.target_port))
             return circ
 
-    state.set_attacher(Attacher(), reactor)
+    attacher = Attacher()
+    state.set_attacher(attacher, reactor)
+    state.add_circuit_listener(attacher)
     # FIXME doesn't exit on control-c? :(
     d = defer.Deferred()
     d.addBoth(lambda x: print('foo', x))
@@ -200,7 +223,7 @@ class StreamBandwidth(object):
             duration = float(self._events[0][0] - rolling[0][0])
             mean_r = sum(x[1] for x in rolling) / duration
             mean_w = sum(x[2] for x in rolling) / duration
-            
+
             # XXX should append some smarter-er object instead of tuple?
             # (start, duration, mean_r, mean_w, max_r, max_w)
             self._history.append(
@@ -315,8 +338,8 @@ def monitor_streams(state, verbose):
     bw = yield BandwidthMonitor.create(reactor, state)
 
 
+@implementer(ICarmlCommand)
 class StreamCommand(object):
-    zope.interface.implements(ICarmlCommand)
 
     # Attributes specified by ICarmlCommand
     name = 'stream'
