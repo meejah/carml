@@ -186,9 +186,11 @@ def dispatch(args=None):
     build_state = sub.build_state
     show_general_info = options['info']
 
-    endpoint = options['connect']
+    endpoint_str = os.environ.get("TOR_CONTROL_PORT", None)
+    if endpoint_str is None:
+        endpoint_str = options['connect']
     try:
-        endpoint = endpoints.clientFromString(reactor, options['connect'])
+        endpoint = endpoints.clientFromString(reactor, endpoint_str)
     except ValueError:
         try:
             endpoint = endpoints.clientFromString(reactor, 'tcp:' + options['connect'])
