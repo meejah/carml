@@ -4,35 +4,30 @@ import shutil
 import re
 from setuptools import setup, find_packages
 
-__version__ = '16.1.0'
-__author__ = 'meejah'
-__contact__ = 'meejah@meejah.ca'
-__url__ = 'https://github.com/meejah/carml'
-__license__ = 'Public Domain (http://unlicense.org/)'
-__copyright__ = 'Copyright 2014 - 2016'
 
+__version__ = '16.2.0'
 
-requirements = [
-    'humanize',
-    'ansicolors',
-    'backports.lzma',
-    'txtorcon>=0.14.0',
-    'txsocksx==1.15.0.2',
-]
 
 setup(
     name='carml',
     version=__version__,
+    author='meejah',
+    author_email='meejah@meejah.ca',
+    url='https://github.com/meejah/carml',
+    license='Public Domain (http://unlicense.org/)',
     description='A command-line tool to query and control a running Tor. Based on txtorcon + Twisted.',
     long_description=open('README.rst', 'r').read(),
     keywords=['python', 'twisted', 'tor', 'command-line', 'cli'],
-    install_requires=requirements,
-    dependency_links=[
-        'git+https://github.com/meejah/txtorcon.git@7d96607b764d1ffe71bc7f5a022668292aef7c2a#egg=txtorcon'
+    install_requires=[
+        'humanize',
+        'ansicolors',
+        'backports.lzma',
+        'txtorcon>=0.14.0',
+        'txsocksx>=1.15.0.2',
     ],
     classifiers=[
         'Framework :: Twisted',
-        'Development Status :: 2 - Pre-Alpha',
+        'Development Status :: 4 - Beta',
         'Environment :: Console',
         'Intended Audience :: Developers',
         'License :: Public Domain',
@@ -48,10 +43,6 @@ setup(
         'Topic :: Internet',
         'Topic :: Security',
         'Topic :: Utilities'],
-    author=__author__,
-    author_email=__contact__,
-    url=__url__,
-    license=__license__,
     packages=find_packages(),
     entry_points={
         'console_scripts': [
