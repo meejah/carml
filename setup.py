@@ -12,8 +12,13 @@ __license__ = 'Public Domain (http://unlicense.org/)'
 __copyright__ = 'Copyright 2014 - 2016'
 
 
-requirements = [line.strip() for line in open('requirements.txt').readlines() if not line.startswith('#') and not line.startswith('--') and line.strip()]
-print "DING", requirements
+requirements = [
+    'humanize',
+    'ansicolors',
+    'backports.lzma',
+    'txtorcon>=0.14.0',
+    'txsocksx==1.15.0.2',
+]
 
 setup(
     name='carml',
