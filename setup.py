@@ -4,7 +4,7 @@ import shutil
 import re
 from setuptools import setup, find_packages
 
-__version__ = '16.0.0'
+__version__ = '16.1.0'
 __author__ = 'meejah'
 __contact__ = 'meejah@meejah.ca'
 __url__ = 'https://github.com/meejah/carml'

@@ -1,5 +1,5 @@
 .PHONY: doc certs
-VERSION = 16.0.0
+VERSION = 16.1.0
 
 venv:
 	virtualenv venv
