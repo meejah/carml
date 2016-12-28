@@ -5,7 +5,7 @@ Note (for PyPI or development installs) you'll need to install
 ``libffi`` and ``liblzma`` development libraries. How to do this on
 various architectures (please send missing ones!):
 
- * Debian + Ubuntu: ``apt-get install libffi-dev liblzma-dev``.
+ * Debian + Ubuntu: ``apt-get install build-essential python-dev python-virtualenv libffi-dev liblzma-dev``.
 
 
 PyPI
@@ -13,18 +13,16 @@ PyPI
 
 Once you have libraries installed as above, you should be able to do a
 simple ``pip install carml``. It's also possible to point to the
-``.whl`` file (after signature verification).
+``.whl`` file (e.g. after signature verification).
 
-To try without affecting system packages:
+It is recommended to use ``virtualenv`` to try without affecting
+system packages:
 
 .. sourcecode:: shell-session
 
     virtualenv venv
     . ./venv/bin/activate
     pip install carml
-
-To use ``peep`` to verify upstream libraries against my copies, you'll
-have to clone the source; see below.
 
 
 Development/Source
@@ -42,25 +40,15 @@ can try something like this (from the root of a fresh clone):
 
    virtualenv venv
    . ./venv/bin/activate
-   pip install --upgrade pip==6.1.1 peep
-   peep install -r requirements.txt
+   pip install --upgrade pip setuptools  # esp. for Debian
    pip install --editable .
 
-(If you want to ensure pip doesn't decide to download something in the
-last step, add ``--proxy localhost:77777`` or similar nonesense
-endpoint because ``--no-download`` is now deprecated it turns out)
-
-
-The main dependencies are:
+Dependencies:
 
  * `txtorcon <https://txtorcon.readthedocs.org>`_
  * `humanize <https://github.com/jmoiron/humanize>`_
  * `ansicolors <https://github.com/verigak/colors/>`_
  * `PyOpenSSL <https://github.com/pyca/pyopenssl>`_
-
-Optionally, to use the :ref:`downloadbundle` command via Tor, you
-need:
-
  * `txsocksx <https://github.com/habnabit/txsocksx>`_
  * `backports.lzma <https://github.com/peterjc/backports.lzma>`_
 
