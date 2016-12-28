@@ -5,7 +5,7 @@ import re
 from setuptools import setup, find_packages
 
 
-__version__ = '16.2.0'
+__version__ = '16.3.0'
 
 
 setup(
