@@ -1,167 +1,156 @@
+<p>
+<tt>carml</tt> is a command-line, pipe-friendly tool for exploring and controlling a running Tor daemon. Most of the sub-commands will be interesting to developers and tinkerers; a few of these will be interesting to end users. This post concentrates on the former.
+</p>
 
-`carml` is a command-line, pipe-friendly tool for exploring and
-controlling a running Tor daemon. Most of the sub-commands will be
-interesting to developers and tinkerers; a few of these will be
-interesting to end users. This post concentrates on the former.
-
-
-`carml` is a Python program written using Twisted and my library
-`txtorcon`. If you're familiar with Python, create a new virtualenv
-and `pip install carml`. There are [more verbose install
-instructions]() available. Once this works, you should be able to type
-`carml` and see the help output.
+<p>
+<tt>carml</tt> is a Python program written using Twisted and my library <tt>txtorcon</tt>. If you're familiar with Python, create a new virtualenv and <tt>pip install carml</tt>. There are <a href="https://carml.readthedocs.io/en/latest/installation.html">more verbose install instructions</a> available. Once this works, you should be able to type <tt>carml</tt> and see the help output.
+</p>
 
 
-## Connecting to Tor
+<h2>Connecting to Tor</h2>
 
-`carml` works somewhat like `git`, in that a normal invocation is
-`carml` followed by some global options and then a sub-command with
-its own options. The most-useful global option is `--connect
-<endpoint>` which tells carml how to connect to the
-control-port. Technically this can be any Twisted client
-endpoint-string but for Tor will be one of `tcp:<port>` (or simply a
-the port) or `unix:/var/run/tor/control` for a unix-socket.
+<p>
+<tt>carml</tt> works somewhat like <tt>git</tt>, in that a normal invocation is <tt>carml</tt> followed by some global options and then a sub-command with its own options. The most-useful global option is <tt>--connect &lt;endpoint&gt;</tt> which tells carml how to connect to the control-port. Technically this can be any Twisted client endpoint-string but for Tor will be one of <tt>tcp:&lt;port&gt;</tt> (or simply a the port) or <tt>unix:/var/run/tor/control</tt> for a unix-socket.
+</p>
 
-For Tor Browser Bundle, use `carml --connect 9151`. Typically a
-"system" Tor is reachable at `carml --connect 9051` or `carml
---connect unix:/var/run/tor/control`. You may need to enable the
-control-port in the configuration and re-load (or re-start) Tor. More
-details [in the
-documentation](https://carml.readthedocs.io/en/latest/installation.html#tor-setup).
+<p>
+For Tor Browser Bundle, use <tt>carml --connect 9151</tt>. Typically a "system" Tor is reachable at <tt>carml --connect 9051</tt> or <tt>carml --connect unix:/var/run/tor/control</tt>. You may need to enable the control-port in the configuration and re-load (or re-start) Tor. More details <a href="https://carml.readthedocs.io/en/latest/installation.html#tor-setup">in the documentation</a>.
+</p>
 
 
-## Start Exploring
+<h2>Start Exploring</h2>
 
-The most-interesting general purpose command is probably `carml
-monitor` -- try running it for a while and you can see what your Tor
-client is doing. This gives some good insight into Tor behavior.
+<p>
+The most-interesting general purpose command is probably <tt>carml monitor</tt> -- try running it for a while and you can see what your Tor client is doing. This gives some good insight into Tor behavior.
+</p>
 
-A (very basic) usage graph is available via `carml graph` to see what
-bandwidth you're using (this needs work on the scaling -- PRs
-welcome!)
+<p>
+A (very basic) usage graph is available via <tt>carml graph</tt> to see what bandwidth you're using (this needs work on the scaling -- PRs welcome!)
+</p>
 
 
-## Explicit Circuits
+<h2>Explicit Circuits</h2>
 
-Sometimes, you want to use a particular circuit. For example, you're
-trying to confirm some possibly-nefarious activity of an Exit. We can
-combine the `carml circ` and `carml stream` commands:
+<p>
+Sometimes, you want to use a particular circuit. For example, you're trying to confirm some possibly-nefarious activity of an Exit. We can combine the <tt>carml circ</tt> and <tt>carml stream</tt> commands:
+</p>
 
-```
+<pre>
 carml circ --build *,*,4D08D29FDE23E75493E4942BAFDFFB90430A81D2
-```
+</pre>
 
-This means make a 3-hop circuit through any entry-guard, any middle
-and then one particular exit (identified by ID). You *can* identify
-via name (only if it's unique!) but hashes are highly recommended. Of
-course, you could explicitly choose the other hops as well.
+<p>
+This means make a 3-hop circuit through any entry-guard, any middle and then one particular exit (identified by ID). You *can* identify via name (only if it's unique!) but hashes are highly recommended. Of course, you could explicitly choose the other hops as well.
+</p>
 
-Next, you'll want to actually attach circuits to that stream. It will
-have printed out something like "Circuit ID 1234". So now we can use
-`carml stream`:
+<p>
+Next, you'll want to actually attach circuits to that stream. It will have printed out something like "Circuit ID 1234". So now we can use <tt>carml stream</tt>:
+</p>
 
-```
+<pre>
 carml stream --attach 1234
-```
+</pre>
 
-This will cause all new streams to be attached to circuit 1234 (until
-we exit the `carml stream` command). So, you can go to another
-terminal and do `torsocks curl https://www.torproject.org` to visit
-Tor via your new circuit. Once you kill the above `carml stream`
-command, Tor will select circuits via its normal algorithm once
-again.
+<p>
+This will cause all new streams to be attached to circuit 1234 (until we exit the <tt>carml stream</tt> command). So, you can go to another terminal and do <tt>torsocks curl https://www.torproject.org</tt> to visit Tor via your new circuit. Once you kill the above <tt>carml stream</tt> command, Tor will select circuits via its normal algorithm once again.
+</p>
 
-Note that it's not currently possible to attach streams destined for
-onion services (this is a Tor limitation, see
-[connection_edge.c](https://gitweb.torproject.org/tor.git/tree/src/or/connection_edge.c#n1832)).
+<p>
+Note that it's not currently possible to attach streams destined for onion services (this is a Tor limitation, see <a href="https://gitweb.torproject.org/tor.git/tree/src/or/connection_edge.c#n1832">connection_edge.c</a>).
+</p>
 
 
-## Debugging Tor
+<h2>Debugging Tor</h2>
 
-The control protocol reveals all Tor events, which includes INFO and
-DEBUG logging events. So, you can quickly and easily turn on DEBUG and
-INFO logging via the `carml events` command:
+<p>
+The control protocol reveals all Tor events, which includes INFO and DEBUG logging events. So, you can quickly and easily turn on DEBUG and INFO logging via the <tt>carml events</tt> command:
+</p>
 
-```
+<pre>
 carml events INFO DEBUG
-```
+</pre>
 
-This can of course be piped through grep or anything else. You can
-give a ``--count`` to ``carml events``, which is useful for some of
-the other events.
+<p>
+This can of course be piped through grep or anything else. You can give a <tt>--count</tt> to <tt>carml events</tt>, which is useful for some of the other events.
+</p>
 
-For example, if you want to "do something" every time a new consensus
-document is published, you could do this:
+<p>
+For example, if you want to "do something" every time a new consensus document is published, you could do this:
+</p>
 
-```
+<pre>
 carml events --once NEWCONSENSUS
-```
+</pre>
 
-This will wait until exactly one NEWCONSENSUS event is produced, dump
-the contents of it to stdout (which will be the new consensus) and
-exit. So you could have a bash script that runs the above (maybe piped
-to `/dev/null`) to ensure a new consensus is available before
-continuing.
+<p>
+This will wait until exactly one NEWCONSENSUS event is produced, dump the contents of it to stdout (which will be the new consensus) and exit. So you could have a bash script that runs the above (maybe piped to <tt>/dev/null</tt>) to ensure a new consensus is available before continuing.
+</p>
 
-Events that Tor emits are
-(https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1698)[documented
-in torspec section 4.1]. You can use carml to list them, with `carml
-events --list`.
+<p>
+Events that Tor emits are <a href="https://gitweb.torproject.org/torspec.git/tree/control-spec.txt#n1698">documented in torspec section 4.1</a>. You can use carml to list them, with <tt>carml events --list</tt>.
+</p>
 
-Another example might be that you want to ensure your relay is still
-listed in the consensus every hour. One way would be to schedule a
-cron-job shortly before the top of each hour which does something
-like:
+<p>
+Another example might be that you want to ensure your relay is still listed in the consensus every hour. One way would be to schedule a cron-job shortly before the top of each hour which does something like:
+</p>
 
-```
+<pre>
 carml events --once NEWCONSENSUS | grep <my relay ID>
 # log something useful if grep didn't find anything
-```
+</pre>
 
 
-## Raw Commands
+<h2>Raw Commands</h2>
 
-You can issue a raw control-port command to Tor via the `carml cmd`
-sub-command. This takes care of authentication, etc and exits when the
-command succeeds (or errors). So, this could be used to test out new
-commands under development etc (as the inputs / outputs are not in any
-way validated).
+<p>
+You can issue a raw control-port command to Tor via the <tt>carml cmd</tt> sub-command. This takes care of authentication, etc and exits when the command succeeds (or errors). So, this could be used to test out new commands under development etc (as the inputs / outputs are not in any way validated).
+</p>
 
-So that you don't have to quote the command, every argument after
-`cmd` is joined back together with spaces before being sent to Tor.
+<p>
+So that you don't have to quote the command, every argument after <tt>cmd</tt> is joined back together with spaces before being sent to Tor.
+</p>
 
-```
+<pre>
 carml cmd getinfo info/names
 carml cmd ADD_ONION NEW:BEST Port=1234
-```
+</pre>
 
 
-## End-User Commands
+<h2>End-User Commands</h2>
 
+<p>
 Briefly, the commands intended to be "end-user useful" are:
+</p>
 
-`carml pastebin`: create a new hidden service and serve a directory,
-single file or stdin at it. You can combine with `carml copybin` or
-simply `torsocks curl ...` on the other side. Still an "exercise to
-the reader" to securely distribute the address.
+<p>
+<tt>carml pastebin</tt>: create a new hidden service and serve a directory, single file or stdin at it. You can combine with <tt>carml copybin</tt> or simply <tt>torsocks curl ...</tt> on the other side. Still an "exercise to the reader" to securely distribute the address.
+</p>
 
-`carml downloadbundle`: download, verify and install a new Tor Browser
-Bundle. Pins the public-key of torproject.org and bundles the likely
-suspects that sign the bundles. Less useful now that TBB auto-updates.
+<p>
+<tt>carml downloadbundle</tt>: download, verify and install a new Tor Browser Bundle. Pins the public-key of torproject.org and bundles the likely suspects that sign the bundles. Less useful now that TBB auto-updates.
+</p>
 
-`carml newid`: same as asking for a "new identity" in Tor Button.
+<p>
+<tt>carml newid</tt>: same as asking for a "new identity" in Tor Button.
+</p>
 
-`carml monitor` shows you what Tor is doing currently. Similarly,
-`carml graph` shows you just the current in/out bandwidth.
+<p>
+<tt>carml monitor</tt> shows you what Tor is doing currently. Similarly, <tt>carml graph</tt> shows you just the current in/out bandwidth.
+</p>
 
 
-## Pure Entertainment
+<h2>Pure Entertainment</h2>
 
+<p>
 Commands that can provide hours of entertainment include:
+</p>
 
-* `carml xplanet`
-* `carml tmux`
+<ul>
+  <li><tt>carml xplanet</tt></li>
+  <li><tt>carml tmux</tt></li>
+</ul>
 
 
-I hope you find carml useful. Suggestions, bugs, fixes all welcome on
-(carml's GitHub page)[https://github.com/meejah/txtorcon].
+<p>
+I hope you find carml useful. Suggestions, bugs, fixes all welcome on <a href="https://github.com/meejah/txtorcon">carml's GitHub page</a>.
+</p>
