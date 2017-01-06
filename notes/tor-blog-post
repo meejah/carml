@@ -1,5 +1,5 @@
 <p>
-<tt>carml</tt> is a command-line, pipe-friendly tool for exploring and controlling a running Tor daemon. Most of the sub-commands will be interesting to developers and tinkerers; a few of these will be interesting to end users. This post concentrates on the former.
+<tt>carml</tt> is a command-line, <a href="https://en.wikipedia.org/wiki/Pipeline_%28Unix%29">pipe</a>-friendly tool for exploring and controlling a running Tor daemon. Most of the sub-commands will be interesting to developers and tinkerers; a few of these will be interesting to end users. This post concentrates on the developers and tinkerers.
 </p>
 
 <p>
@@ -10,7 +10,7 @@
 <h2>Connecting to Tor</h2>
 
 <p>
-<tt>carml</tt> works somewhat like <tt>git</tt>, in that a normal invocation is <tt>carml</tt> followed by some global options and then a sub-command with its own options. The most-useful global option is <tt>--connect &lt;endpoint&gt;</tt> which tells carml how to connect to the control-port. Technically this can be any Twisted client endpoint-string but for Tor will be one of <tt>tcp:&lt;port&gt;</tt> (or simply a the port) or <tt>unix:/var/run/tor/control</tt> for a unix-socket.
+<tt>carml</tt> works somewhat like <tt>git</tt>, in that a normal invocation is <tt>carml</tt> followed by some global options and then a sub-command with its own options. The most-useful global option is <tt>--connect &lt;endpoint&gt;</tt> which tells carml how to connect to the control-port. Technically this can be any Twisted client endpoint-string but for Tor will be one of <tt>tcp:&lt;port&gt;</tt> (or simply a port) or <tt>unix:/var/run/tor/control</tt> for a unix-socket.
 </p>
 
 <p>
@@ -35,12 +35,12 @@ A (very basic) usage graph is available via <tt>carml graph</tt> to see what ban
 Sometimes, you want to use a particular circuit. For example, you're trying to confirm some possibly-nefarious activity of an Exit. We can combine the <tt>carml circ</tt> and <tt>carml stream</tt> commands:
 </p>
 
-<pre>
-carml circ --build *,*,4D08D29FDE23E75493E4942BAFDFFB90430A81D2
+<pre style="max-width: 540px; overflow: auto;">
+carml circ --build "*,*,4D08D29FDE23E75493E4942BAFDFFB90430A81D2"
 </pre>
 
 <p>
-This means make a 3-hop circuit through any entry-guard, any middle and then one particular exit (identified by ID). You *can* identify via name (only if it's unique!) but hashes are highly recommended. Of course, you could explicitly choose the other hops as well.
+This means make a 3-hop circuit through any entry-guard, any middle and then one particular exit (identified by ID). You <i>can*=</i> identify via name (only if it's unique!) but hashes are highly recommended. Of course, you could explicitly choose the other hops as well. <b>Note that</b> the stars still leave the selection up to carml / txtorcon which cannot (and does not) use Tor's exact selection algorithm.
 </p>
 
 <p>
@@ -131,7 +131,7 @@ Briefly, the commands intended to be "end-user useful" are:
 </p>
 
 <p>
-<tt>carml newid</tt>: same as asking for a "new identity" in Tor Button.
+<tt>carml newid</tt>: sends the NEWNYM signal, which clears the DNS cache and causes Tor to not re-use any existing circuits for new requests.
 </p>
 
 <p>
@@ -154,3 +154,7 @@ Commands that can provide hours of entertainment include:
 <p>
 I hope you find carml useful. Suggestions, bugs, fixes all welcome on <a href="https://github.com/meejah/txtorcon">carml's GitHub page</a>.
 </p>
+
+<h2>See Also</h2>
+
+There is also a curses-based Tor tool called <a href="https://www.atagar.com/arm/">ARM</a> (<a href="https://blog.torproject.org/blog/summer-conclusion-arm-project">blog post</a>). This is being re-written as "Nyx" currently.
