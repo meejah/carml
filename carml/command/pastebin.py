@@ -176,14 +176,17 @@ class PasteBinCommand(object):
         count = 1 if options['once'] else options['count']
         port = yield ep.listen(PasteBinSite(root, max_requests=count))
 
-        # FIXME
-        clients = port.tor_config.hiddenservices[0].clients
+        if options['keys'] == 0:
+            clients = None
+        else:
+            # FIXME
+            clients = port.tor_config.hiddenservices[0].clients
 
         host = port.getHost()
         if options['dry-run']:
             print("Try it locally via http://127.0.0.1:8899")
 
-        elif len(clients):
+        elif clients:
             print("You requested stealth authentication.")
             print("Tor has created %d keys; each key should be given to one person." % len(clients))
             print('They can set one using the "HidServAuth" torrc option, like so:')
@@ -205,6 +208,8 @@ class PasteBinCommand(object):
         else:
             print("People using Tor Browser Bundle can find your paste at (once the descriptor uploads):")
             print("\n   http://{0}\n".format(host.onion_uri))
+            print("for example:")
+            print("   torsocks curl -o data.asc http://{0}\n".format(host.onion_uri))
             if not count:
                 print("Type Control-C to stop serving and shut down the Tor we launched.")
             print("If you wish to keep the hidden-service keys, they're in (until we shut down):")
