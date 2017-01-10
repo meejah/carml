@@ -102,6 +102,9 @@ def attach_streams_to_circuit(circid, state):
                 # so -> probably want exiting to be an option, and not the default
 
         def attach_stream(self, stream, circuits):
+            if stream.flags.get('PURPOSE', 'unknown') in ['DIR_FETCH', 'DIR_UPLOAD', 'DIRPORT_TEST']:
+                print("  tor-internal directory stream ({})".format(stream.flags['PURPOSE']))
+                return None
             if circ.state == 'CLOSED':
                 print("  target circuit is closed, not attaching")
                 return txtorcon.TorState.DO_NOT_ATTACH
