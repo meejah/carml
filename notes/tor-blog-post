@@ -44,7 +44,7 @@ This means make a 3-hop circuit through any entry-guard, any middle and then one
 </p>
 
 <p>
-Next, you'll want to actually attach circuits to that stream. It will have printed out something like "Circuit ID 1234". So now we can use <tt>carml stream</tt>:
+Next, you'll want to actually attach circuits to that stream. It will have printed out something like "Circuit ID 1234". Now we can use <tt>carml stream</tt>:
 </p>
 
 <pre>
@@ -52,7 +52,7 @@ carml stream --attach 1234
 </pre>
 
 <p>
-This will cause all new streams to be attached to circuit 1234 (until we exit the <tt>carml stream</tt> command). So, you can go to another terminal and do <tt>torsocks curl https://www.torproject.org</tt> to visit Tor via your new circuit. Once you kill the above <tt>carml stream</tt> command, Tor will select circuits via its normal algorithm once again.
+This will cause all new streams to be attached to circuit 1234 (until we exit the <tt>carml stream</tt> command). In another terminal, try <tt>torsocks curl https://www.torproject.org</tt> to visit Tor Project's web site via your new circuit. Once you kill the above <tt>carml stream</tt> command, Tor will select circuits via its normal algorithm once again.
 </p>
 <p>
 Note that it's not currently possible to attach streams destined for onion services (this is a Tor limitation, see <a href="https://gitweb.torproject.org/tor.git/tree/src/or/connection_edge.c#n1832">connection_edge.c</a>).
@@ -62,7 +62,7 @@ Note that it's not currently possible to attach streams destined for onion servi
 <h2>Debugging Tor</h2>
 
 <p>
-The control protocol reveals all Tor events, which includes INFO and DEBUG logging events. So, you can quickly and easily turn on DEBUG and INFO logging via the <tt>carml events</tt> command:
+The control protocol reveals all Tor events, which includes INFO and DEBUG logging events. This allows you to easily turn on DEBUG and INFO logging via the <tt>carml events</tt> command:
 </p>
 
 <pre>
@@ -82,7 +82,7 @@ carml events --once NEWCONSENSUS
 </pre>
 
 <p>
-This will wait until exactly one NEWCONSENSUS event is produced, dump the contents of it to stdout (which will be the new consensus) and exit. So you could have a bash script that runs the above (maybe piped to <tt>/dev/null</tt>) to ensure a new consensus is available before continuing.
+This will wait until exactly one NEWCONSENSUS event is produced, dump the contents of it to stdout (which will be the new consensus) and exit. Using a bash script that runs the above (maybe piped to <tt>/dev/null</tt>) you can ensure a new consensus is available before continuing.
 </p>
 
 <p>
@@ -102,11 +102,11 @@ carml events --once NEWCONSENSUS | grep <my relay ID>
 <h2>Raw Commands</h2>
 
 <p>
-You can issue a raw control-port command to Tor via the <tt>carml cmd</tt> sub-command. This takes care of authentication, etc. and exits when the command succeeds (or errors). So, this could be used to test out new commands under development etc (as the inputs / outputs are not in any way validated).
+You can issue a raw control-port command to Tor via the <tt>carml cmd</tt> sub-command. This takes care of authentication, etc. and exits when the command succeeds (or errors). This can be useful to test out new commands under development etc (as the inputs / outputs are not in any way validated).
 </p>
 
 <p>
-So that you don't have to quote the command, every argument after <tt>cmd</tt> is joined back together with spaces before being sent to Tor.
+Every argument after <tt>cmd</tt> is joined back together with spaces before being sent to Tor so you don't have to quote things.
 </p>
 
 <pre>
