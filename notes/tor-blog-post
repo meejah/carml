@@ -126,10 +126,6 @@ Briefly, the commands intended to be "end-user useful" are:
 </p>
 
 <p>
-<tt>carml downloadbundle</tt>: download, verify and install a new Tor Browser Bundle. This pins the public-key of torproject.org and bundles the likely suspects that sign the bundles. It is less useful now that TBB auto-updates.
-</p>
-
-<p>
 <tt>carml newid</tt>: sends the NEWNYM signal, which clears the DNS cache and causes Tor to not re-use any existing circuits for new requests.
 </p>
 
@@ -137,6 +133,17 @@ Briefly, the commands intended to be "end-user useful" are:
 <tt>carml monitor</tt> shows you what Tor is doing currently. Similarly, <tt>carml graph</tt> shows you just the current in/out bandwidth.
 </p>
 
+
+<h2>wyzzy</h2>
+
+<p>
+If you install <tt>pyOpenSSL</tt> and <tt>service_identity</tt>
+you gain access to the following sekrit commands:
+</p>
+
+<p>
+<tt>carml tbb</tt>: download, verify and install a new Tor Browser Bundle. This pins the public-key of torproject.org and bundles the likely suspects that sign the bundles. It is less useful now that TBB auto-updates.
+</p>
 
 <h2>Pure Entertainment</h2>
 
