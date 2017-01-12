@@ -6,4 +6,4 @@ command.
 from carml.dispatch import dispatch
 
 __all__ = ['dispatch']
-__version__ = '17.0.0'
+__version__ = '17.1.0'

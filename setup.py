@@ -5,7 +5,7 @@ import re
 from setuptools import setup, find_packages
 
 
-__version__ = '17.0.0'
+__version__ = '17.1.0'
 
 
 setup(
@@ -22,7 +22,7 @@ setup(
         'humanize',
         'ansicolors',
         'backports.lzma',
-        'txtorcon>=0.14.0',
+        'txtorcon>=0.18.0',
         'txsocksx>=1.15.0.2',
     ],
     classifiers=[
