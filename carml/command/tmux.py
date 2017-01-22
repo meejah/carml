@@ -35,7 +35,7 @@ class TmuxCommand(object):
 
         set-option -g status-utf8 on
         set-option -g status-fg green
-        set -g status-right '#(rainbarf --tmux --bright --no-battery --remaining)'
+        set -g status-right '#(carml tmux)'
         set -g status-interval 2
     """
 
