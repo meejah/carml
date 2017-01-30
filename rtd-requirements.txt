@@ -4,7 +4,7 @@ alabaster==0.7.9
 ansicolors==1.0.2
 argparse==1.2.1
 backports.lzma==0.0.6
-carml==17.1.0
+carml==17.2.0
 constantly==15.1.0
 humanize==0.5.1
 incremental==16.10.1
