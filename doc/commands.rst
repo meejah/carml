@@ -79,4 +79,5 @@ options listed above). You can get any help on a command with the
    command-circ
    command-newid
    command-events
+   command-relay
 
