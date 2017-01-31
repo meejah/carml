@@ -31,3 +31,9 @@ Examples
 
    $ carml relay --list | wc -l
    7197
+   $ carml relay --info [hex id]
+        name: [redacted]
+      hex id: $[redacted]
+    location: XX
+     address: [redacted]:9011 (DirPort=9030)
+    last published 28 days ago

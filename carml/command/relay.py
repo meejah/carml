@@ -52,8 +52,8 @@ def router_info(state, arg):
         yield _print_router_info(state.routers[arg])
     except KeyError:
         candidates = [
-            router for nm, router in state.routers.items()
-            if arg in nm
+            r for r in state.all_routers
+            if arg in r.name or arg in r.id_hex
         ]
         if not candidates:
             print("Nothing found ({} routers total)".format(len(state.all_routers)))
