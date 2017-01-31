@@ -72,6 +72,7 @@ def _when_updated(state):
         # TorState?
         print("Got NEWCONSENSUS at {}".format(datetime.datetime.now()))
         d.callback(None)
+        state.protocol.remove_event_listener('NEWCONSENSUS', _newconsensus)
     state.protocol.add_event_listener('NEWCONSENSUS', _newconsensus)
     return d
 
