@@ -10,6 +10,11 @@
           risk.
 
 
+.. image:: https://readthedocs.org/projects/carml/badge/?version=latest
+    :target: https://carml.readthedocs.io/en/latest/
+    :alt: ReadTheDocs
+
+
 carml
 =====
 
