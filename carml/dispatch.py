@@ -189,6 +189,8 @@ def dispatch(args=None):
     endpoint_str = os.environ.get("TOR_CONTROL_PORT", None)
     if endpoint_str is None:
         endpoint_str = options['connect']
+    else:
+        endpoint_str = 'tcp:localhost:{}'.format(endpoint_str)
     try:
         endpoint = endpoints.clientFromString(reactor, endpoint_str)
     except ValueError:
