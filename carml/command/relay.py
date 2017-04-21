@@ -6,7 +6,7 @@ import functools
 import random
 
 from twisted.python import usage, log
-from twisted.internet import defer, reactor
+from twisted.internet import defer, reactor, endpoints
 import zope.interface
 import humanize
 import txtorcon
@@ -33,23 +33,46 @@ class RelayOptions(usage.Options):
 
 
 @defer.inlineCallbacks
-def _print_router_info(router):
+def _print_router_info(router, agent=None):
     #loc = yield router.get_location()
     loc = yield router.location
-    print("    name: {}".format(router.name))
-    print("  hex id: {}".format(router.id_hex))
-    print("location: {}".format(loc.countrycode))
-    print(" address: {}:{} (DirPort={})".format(router.ip, router.or_port, router.dir_port))
+    print("            name: {}".format(router.name))
+    print("          hex id: {}".format(router.id_hex))
+    print("        location: {}".format(loc.countrycode))
+    print("         address: {}:{} (DirPort={})".format(router.ip, router.or_port, router.dir_port))
     diff = datetime.datetime.utcnow() - router.modified
-    print("last published: {} ago".format(humanize.naturaldelta(diff)))
+    print("  last published: {} ago".format(humanize.naturaldelta(diff)))
+    if agent:
+        print(util.colors.italic("Extended information from" + util.colors.green(" onionoo.torproject.org") + ":"))
+        details = yield router.get_onionoo_details(agent)
+        details['or_addresses'] = ', '.join(details['or_addresses'])
+        if False:
+            details = {
+                k: util.colors.bold(str(v))
+                for k, v in details.items()
+            }
+        print(
+            "        platform: {platform}\n"
+            "        runnning: {running}\n"
+            "     dir_address: {dir_address}\n"
+            "    OR addresses: {or_addresses}\n"
+            "        location: {city_name}, {region_name}, {country_name}\n"
+            "       host name: {host_name}\n"
+            "              AS: {as_number} ({as_name})\n"
+            "  last restarted: {last_restarted}\n"
+            "    last changed: {last_changed_address_or_port}\n"
+            "       last seen: {last_seen}\n"
+            "   probabilities: guard={guard_probability} middle={middle_probability} exit={exit_probability}\n"
+            "".format(**details)
+        )
 
 
 @defer.inlineCallbacks
-def router_info(state, arg):
+def router_info(state, arg, tor):
     if len(arg) == 40 and not arg.startswith('$'):
         arg = '${}'.format(arg)
     try:
-        yield _print_router_info(state.routers[arg])
+        yield _print_router_info(state.routers[arg], agent=tor.web_agent())
     except KeyError:
         candidates = [
             r for r in state.all_routers
@@ -127,8 +150,11 @@ class RelayCommand(object):
         """
         ICarmlCommand API
         """
+        endpoint_str = mainoptions['connect']
+        endpoint = endpoints.clientFromString(reactor, endpoint_str)
+        tor = yield txtorcon.connect(reactor, endpoint)
         if options['info']:
-            yield router_info(state, options['info'])
+            yield router_info(state, options['info'], tor)
         elif options['list']:
             yield router_list(state)
         elif options['await']:
