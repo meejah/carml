@@ -22,7 +22,7 @@ setup(
         'humanize',
         'ansicolors',
         'backports.lzma',
-        'txtorcon>=0.19.0',
+        'txtorcon>=0.19.1',
         'txsocksx>=1.15.0.2',
     ],
     classifiers=[
