@@ -161,7 +161,7 @@ def circ(cfg, if_unused, verbose, list, build, delete):
     """
     Manipulate Tor circuits.
     """
-    if len([o for o in [list, build, delete] if o]) > 1:
+    if len([o for o in [list, build, delete] if o]) != 1:
         raise click.UsageError(
             "Specify just one of --list, --build or --delete"
         )
