@@ -18,20 +18,6 @@ from carml.interface import ICarmlCommand
 from carml import util
 
 
-class CmdOptions(usage.Options):
-    def __init__(self):
-        super(CmdOptions, self).__init__()
-        self.longOpt.remove('version')
-        self.longOpt.remove('help')
-        self.args = None
-
-    def parseArgs(self, *args):
-        self.args = args
-
-    def getUsage(self, **kw):
-        return "Options:\n   Pass any number of strings as args, which will be executed as a Tor controller command and the result printed. Pass a single dash (-) to read commands from stdin a line at a time."
-
-
 class StdioLineReceiver(LineReceiver):
     delimiter = '\n'
 
@@ -87,31 +73,14 @@ def do_cmd(proto, args):
 # see cmd_info for an alternate way to implement this via a method
 # with attributes and "zope.interface.implementsDirectly()"
 # trying out both ways to see what feels better
-@zope.interface.implementer(ICarmlCommand)
-class CmdSubCommand(object):
-    # Attributes specified by ICarmlCommand
-    name = 'cmd'
-    help_text = 'Run the rest of the args as a Tor control command. For example "GETCONF SocksPort" or "GETINFO net/listeners/socks".'
-    controller_connection = True
-    build_state = False
-    options_class = CmdOptions
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, args):
+    if len(args) == 0:
+        print("(no command to run)")
 
-    def validate(self, options, mainoptions):
-        if not options.args:
-            raise RuntimeError("Need to specify a command (or - to read commands from stdin).")
-
-    @defer.inlineCallbacks
-    def run(self, options, mainoptions, proto):
-        """
-        ICarmlCommand API
-        """
-
-        if options.args == ('-',):
-            all_done = defer.Deferred()
-            stdio.StandardIO(StdioLineReceiver(all_done, proto))
-            yield all_done
-        else:
-            yield do_cmd(proto, options.args)
-
-cmd = CmdSubCommand()
-__all__ = ['cmd']
+    elif len(args) == 1 and args[0] == '-':
+        all_done = defer.Deferred()
+        stdio.StandardIO(StdioLineReceiver(all_done, tor.protocol))
+        yield all_done
+    else:
+        yield do_cmd(tor.protocol, args)

@@ -11,6 +11,7 @@ import txtorcon
 
 from . import carml_check_pypi
 from . import carml_circ
+from . import carml_cmd
 
 
 class Config(object):
@@ -167,4 +168,21 @@ def circ(cfg, if_unused, verbose, list, build, delete):
     return _run_command(
         carml_circ.run,
         cfg, if_unused, verbose, list, build, delete,
+    )
+
+
+@carml.command()
+@click.argument(
+    "command_args",
+    nargs=-1,
+)
+@click.pass_obj
+def cmd(cfg, command_args):
+    """
+    Run the rest of the args as a Tor control command. For example
+    "GETCONF SocksPort" or "GETINFO net/listeners/socks".
+    """
+    return _run_command(
+        carml_cmd.run,
+        cfg, command_args,
     )
