@@ -24,6 +24,7 @@ setup(
         'backports.lzma',
         'txtorcon>=0.19.1',
         'txsocksx>=1.15.0.2',
+        'click>=6.7',
     ],
     classifiers=[
         'Framework :: Twisted',
@@ -46,7 +47,7 @@ setup(
     packages=find_packages(),
     entry_points={
         'console_scripts': [
-            'carml = carml.dispatch:dispatch'
+            'carml = carml.cli:carml'
         ]
     },
     include_package_data=True,
