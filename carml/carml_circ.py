@@ -39,65 +39,33 @@ class CircOptions(usage.Options):
 
 
 @defer.inlineCallbacks
-def list_circuits(options, proto):
+def list_circuits(reactor, cfg, tor, verbose):
     print("Circuits:")
-    state = txtorcon.TorState(proto)
-    yield state.post_bootstrap
+    state = yield tor.create_state()
 
     now = datetime.datetime.utcnow()
-    util.dump_circuits(state, options['verbose'])
+    util.dump_circuits(state, verbose)
 
 
 @defer.inlineCallbacks
-def delete_circuit(proto, circid, ifunused):
-    # the already_deleted voodoo is because sometimes the circuit is
-    # already marked as deleted before the OK comes back from the
-    # controller, as in you get the event "first".
-    # perhaps txtorcon should "fix"/normalize that such that it saves
-    # events until the OK? maybe tor bug?
-    class DetermineCircuitClosure(object):
-        def __init__(self, target_id, done_deferred):
-            self.circ_id = str(target_id)
-            self.circuit_gone = False
-            self.already_deleted = False
-            self.completed = done_deferred
-
-        def __call__(self, text):
-            cid, what, _ = text.split(' ', 2)
-            if what in ['CLOSED', 'FAILED']:
-                if self.circ_id == cid:
-                    self.circuit_gone = True
-                    print("...circuit %s gone." % self.circ_id)
-                    sys.stdout.flush()
-                    if not self.already_deleted:
-                        self.completed.callback(self)
-
+def delete_circuit(reactor, cfg, tor, circid, ifunused):
     unused_string = '(if unused) ' if ifunused else ''
     print('Deleting circuit %s"%s"...' % (unused_string, circid),)
 
-    gone_d = defer.Deferred()
-    monitor = DetermineCircuitClosure(circid, gone_d)
-    proto.add_event_listener('CIRC', monitor)
-    sys.stdout.flush()
+    state = yield tor.create_state() # bootstrap=False)
 
-    state = txtorcon.TorState(proto, bootstrap=False)
     kw = {}
     if ifunused:
         kw['IfUnused'] = True
+
     try:
-        status = yield state.close_circuit(circid, **kw)
-        monitor.already_deleted = True
-    except txtorcon.TorProtocolError as e:
-        gone_d.errback(e)
-        yield gone_d
-        return
+        circ = state.circuits[circid]
+    except KeyError:
+        raise RuntimeError("No such circuit '{}'".format(circid))
 
-    if monitor.circuit_gone:
-        return
-
+    status = yield state.close_circuit(circid, **kw)
     print(status, '(waiting for CLOSED)...')
-    sys.stdout.flush()
-    yield gone_d
+    yield circ.when_closed()
     # we're now awaiting a callback via CIRC events indicating
     # that our circuit has entered state CLOSED
 
@@ -113,7 +81,7 @@ class _BuiltCircuitListener(txtorcon.CircuitListenerMixin):
             if self.first:
                 self.first = False
             else:
-                sys.stdout.write('->')
+                sys.stdout.write(' -> ')
             sys.stdout.write(router.name)
             sys.stdout.flush()
 
@@ -136,9 +104,9 @@ class _BuiltCircuitListener(txtorcon.CircuitListenerMixin):
 
 
 @defer.inlineCallbacks
-def build_circuit(proto, routers):
-    state = txtorcon.TorState(proto)
-    yield state.post_bootstrap
+def build_circuit(reactor, cfg, tor, routers):
+    state = yield tor.create_state()
+
     if len(routers) == 1 and routers[0].lower() == 'auto':
         routers = None
         # print("Building new circuit, letting Tor select the path.")
@@ -177,40 +145,19 @@ def build_circuit(proto, routers):
     yield all_done
 
 
-class CircCommand(object):
-    zope.interface.implements(ICarmlCommand)
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, if_unused, verbose, list, build, delete):
+    if list:
+        yield list_circuits(reactor, cfg, tor, verbose)
 
-    # Attributes specified by ICarmlCommand
-    name = 'circ'
-    options_class = CircOptions
-    help_text = 'Manipulate Tor circuits.'
-    controller_connection = True
-    build_state = False
+    elif len(delete) > 0:
+        deletes = []
+        for d in delete:
+            deletes.append(delete_circuit(reactor, cfg, tor, d, if_unused))
+        results = yield defer.DeferredList(deletes)
+        for ok, value in results:
+            if not ok:
+                raise value
 
-    def validate(self, options, mainoptions):
-        """ICarmlCommand API"""
-        if options['list'] == 0 and options['delete'] == [] and not options['build']:
-            raise RuntimeError("Must specify one of --list, --delete, --build")
-        if options['if-unused'] and options['delete'] == []:
-            raise RuntimeError("--if-unused is only for use with --delete")
-
-    def run(self, options, mainoptions, proto):
-        """
-        ICarmlCommand API
-        """
-
-        if options['list']:
-            return list_circuits(options, proto)
-
-        elif len(options['delete']) > 0:
-            deletes = []
-            for d in options['delete']:
-                deletes.append(delete_circuit(proto, d, options['if-unused']))
-            return defer.DeferredList(deletes)
-
-        elif options['build']:
-            return build_circuit(proto, options['build'].split(','))
-
-
-cmd = CircCommand()
-__all__ = ['cmd']
+    elif build:
+        yield build_circuit(reactor, cfg, tor, build.split(','))

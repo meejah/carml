@@ -10,6 +10,7 @@ import click
 import txtorcon
 
 from . import carml_check_pypi
+from . import carml_circ
 
 
 class Config(object):
@@ -122,4 +123,48 @@ def check_pypi(cfg, package, revision):
     return _run_command(
         carml_check_pypi.run,
         cfg, package, revision,
+    )
+
+@carml.command()
+@click.option(
+    '--if-unused', '-u',
+    help='When deleting, pass the IfUnused flag to Tor.',
+    is_flag=True,
+)
+@click.option(
+    '--verbose',
+    help='More information per circuit.',
+    is_flag=True,
+)
+@click.option(
+    '--list', '-L',
+    help='List existing circuits.',
+    is_flag=True,
+    default=None,
+)
+@click.option(
+    '--build', '-b',
+    help=('Build a new circuit, given a comma-separated list of router names or'
+          ' IDs. Use "auto" to let Tor select the route.'),
+    default=None,
+)
+@click.option(
+    '--delete',
+    help='Delete a circuit by its ID.',
+    default=None,
+    multiple=True,
+    type=int,
+)
+@click.pass_obj
+def circ(cfg, if_unused, verbose, list, build, delete):
+    """
+    Manipulate Tor circuits.
+    """
+    if len([o for o in [list, build, delete] if o]) > 1:
+        raise click.UsageError(
+            "Specify just one of --list, --build or --delete"
+        )
+    return _run_command(
+        carml_circ.run,
+        cfg, if_unused, verbose, list, build, delete,
     )
