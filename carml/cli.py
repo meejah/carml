@@ -10,6 +10,7 @@ import click
 import txtorcon
 
 from . import carml_check_pypi
+from . import carml_events
 from . import carml_circ
 from . import carml_cmd
 
@@ -185,4 +186,44 @@ def cmd(cfg, command_args):
     return _run_command(
         carml_cmd.run,
         cfg, command_args,
+    )
+
+
+@carml.command()
+@click.option(
+    '--list', '-L',
+    help='Show available events.',
+    is_flag=True,
+)
+@click.option(
+    '--once',
+    help='Output exactly one and quit (same as -n 1 or --count=1).',
+    is_flag=True,
+)
+@click.option(
+    '--show-event', '-s',
+    help='Prefix each line with the event it is from.',
+    is_flag=True,
+)
+@click.option(
+    '--count', '-n',
+    help='Output this many events, and quit (default is unlimited).',
+    type=int,
+)
+@click.argument(
+    "events",
+    nargs=-1,
+)
+@click.pass_obj
+def events(cfg, list, once, show_event, count, events):
+    """
+    Follow any Tor events, listed as positional arguments.
+    """
+    if len(events) < 1 and not list:
+        raise click.UsageError(
+            "Must specify at least one event"
+        )
+    return _run_command(
+        carml_events.run,
+        cfg, list, once, show_event, count, events,
     )
