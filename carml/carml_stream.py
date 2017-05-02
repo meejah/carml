@@ -14,25 +14,6 @@ from carml.interface import ICarmlCommand
 from carml import util
 
 
-class StreamOptions(usage.Options):
-    def __init__(self):
-        super(StreamOptions, self).__init__()
-        self.longOpt.remove('version')
-        self.longOpt.remove('help')
-        self['delete'] = []
-
-    optFlags = [
-        ('list', 'L', 'List existing streams.'),
-        ('follow', 'f', 'Follow stream creation.'),
-        # ('per-process', 'p', 'Attach all new streams to one circuit, per PID.'),
-    ]
-
-    optParameters = [
-        ('attach', 'a', 0, 'Attach all new streams to a particular circuit-id.', int),
-        ('close', 'd', 0, 'Delete/close a stream by its ID.', int),
-    ]
-
-
 def attach_streams_per_process(state):
     print("Exiting (e.g. Ctrl-C) will cause Tor to resume choosing circuits.")
     print("Giving each new PID we see its own Circuit (until they're gone).")
@@ -141,8 +122,6 @@ def list_streams(state, verbose):
             if source is None:
                 source = 'unknown'
             print("     to %s:%s, from %s" % (h, stream.target_port, source))
-
-    reactor.stop()
 
 
 @defer.inlineCallbacks
@@ -285,10 +264,6 @@ class BandwidthMonitor(txtorcon.StreamListenerMixin):
     def stream_succeeded(self, stream):
         # i think this happens when it *starts* passing data?
         print("succeeded", stream, stream.target_host, stream.target_addr)
-        try:
-            print("BOOM:", self._state.addrmap.find(stream.target_host).name)
-        except KeyError:
-            print("unfound", stream.target_host)
 
     def stream_attach(self, stream, circuit):
         pass #print("attach", stream)
@@ -341,47 +316,16 @@ def monitor_streams(state, verbose):
     bw = yield BandwidthMonitor.create(reactor, state)
 
 
-@implementer(ICarmlCommand)
-class StreamCommand(object):
-
-    # Attributes specified by ICarmlCommand
-    name = 'stream'
-    options_class = StreamOptions
-    help_text = 'Manipulate Tor streams.'
-    controller_connection = True
-    build_state = True
-
-    def validate(self, options, mainoptions):
-        cmds = ['attach', 'list', 'close', 'follow']  # , 'per-process']
-        not_a_one = all(map(lambda x: not options[x], cmds))
-        if not_a_one:
-            raise RuntimeError("Specify one of: " + ', '.join(cmds))
-
-    def run(self, options, mainoptions, state):
-        """
-        ICarmlCommand API
-        """
-
-        verbose = True
-        if 'verbose' in options:
-            verbose = options['verbose']
-        if options['attach']:
-            return attach_streams_to_circuit(options['attach'], state)
-#        elif options['per-process']:
-#            return attach_streams_per_process(state)
-        elif options['list']:
-            return list_streams(state, verbose)
-        elif options['close']:
-            d = close_stream(state, options['close'])
-            d.addBoth(lambda x: reactor.stop())
-            return d
-        elif options['follow']:
-            d = defer.succeed(None)
-            d.addCallback(lambda _: monitor_streams(state, verbose))
-            d.addCallback(lambda _: defer.Deferred())
-            return d
-
-        reactor.stop()
-
-cmd = StreamCommand()
-__all__ = ['cmd']
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, list, follow, attach, close, verbose):
+    state = yield tor.create_state()
+    if attach:
+        yield attach_streams_to_circuit(attach, state)
+    elif list:
+        yield list_streams(state, verbose)
+    elif close:
+        yield close_stream(state, close)
+    elif follow:
+        d = defer.succeed(None)
+        yield monitor_streams(state, verbose)
+        yield defer.Deferred()

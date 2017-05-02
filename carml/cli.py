@@ -10,6 +10,7 @@ import click
 import txtorcon
 
 from . import carml_check_pypi
+from . import carml_stream
 from . import carml_events
 from . import carml_circ
 from . import carml_cmd
@@ -227,3 +228,49 @@ def events(cfg, list, once, show_event, count, events):
         carml_events.run,
         cfg, list, once, show_event, count, events,
     )
+
+
+@carml.command()
+@click.option(
+    '--list', '-L',
+    help='List existing streams.',
+    is_flag=True,
+)
+@click.option(
+    '--follow', '-f',
+    help='Follow stream creation.',
+    is_flag=True,
+)
+@click.option(
+    '--attach', '-a',
+    help='Attach all new streams to a particular circuit-id.',
+    type=int,
+    default=None,
+)
+@click.option(
+    '--close', '-d',
+    help='Delete/close a stream by its ID.',
+    type=int,
+    default=None,
+)
+@click.option(
+    '--verbose', '-v',
+    help='Show more details.',
+    is_flag=True,
+)
+@click.pass_context
+def stream(ctx, list, follow, attach, close, verbose):
+    """
+    Manipulate Tor streams.
+    """
+    cfg = ctx.obj
+    if len([x for x in [list, follow, attach, close] if x]) != 1:
+        click.echo(ctx.get_help())
+        raise click.UsageError(
+            "Must specify one of --list, --follow, --attach or --close"
+        )
+    return _run_command(
+        carml_stream.run,
+        cfg, list, follow, attach, close, verbose,
+    )
+
