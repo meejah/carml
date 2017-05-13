@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+
 import os
 import sys
 import functools
@@ -15,45 +16,6 @@ from carml.interface import ICarmlCommand
 from carml.util import dump_circuits, format_net_location, nice_router_name, colors, wrap
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
-
-
-class MonitorOptions(usage.Options):
-    optFlags = [
-        ('once', 'o', 'Exit after printing the current state.'),
-        ('no-streams', 's', 'Without this, list Tor streams.'),
-        ('no-circuits', 'c', 'Without this, list Tor circuits.'),
-        ('no-addr', 'a', 'Without this, list address mappings (and expirations, with -f).'),
-        ('no-guards', 'g', 'Without this, Information about your current Guards.'),
-        ('verbose', 'v', 'Additional information. Circuits: ip, location, asn, country-code.'),
-    ]
-
-    optParameters = [
-        ('log-level', 'l', 'INFO', 'Subscribe to Tor log messages up to "level". Valid levels are: %s' % ' '.join(LOG_LEVELS)),
-    ]
-
-    def opt_log_level(self, x):
-        if x.lower() == 'all':
-            self['log-level'] = LOG_LEVELS
-
-        levels = x.upper()
-        if ',' in x:
-            levels = levels.split(',')
-        else:
-            levels = [levels]
-
-        for sub in levels:
-            if sub not in LOG_LEVELS:
-                raise RuntimeError('Unknown log level "%s".' % sub)
-        self['log-level'].extend(levels)
-
-    def __init__(self):
-        """
-        We override this to get rid of the Twisted default --version and --help things
-        """
-        super(MonitorOptions, self).__init__()
-        self.longOpt.remove('version')
-        self.longOpt.remove('help')
-        self['log-level'] = []
 
 
 def string_for_circuit(state, circuit):
@@ -158,17 +120,20 @@ def tor_log(level, msg):
     print('%s: %s' % (level, msg))
 
 
-def monitor_callback(options, state):
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level):
+    state = yield tor.create_state()
+
     follow_string = None
-    if options['log-level'] and not options['once']:
+    if log_level and not once:
         follow_string = 'Logging ('
-        for event in options['log-level']:  # LOG_LEVELS:
+        for event in log_level:  # LOG_LEVELS:
             state.protocol.add_event_listener(event, functools.partial(tor_log, event))
             follow_string += event + ', '
-            if event == options['log-level']:
+            if event == log_level:
                 break
         follow_string = follow_string[:-2] + ')'
-    if not options['no-streams']:
+    if not no_streams:
         if follow_string:
             follow_string += ' and Stream'
         else:
@@ -179,9 +144,9 @@ def monitor_callback(options, state):
                 print('  ' + string_for_stream(state, stream))
         else:
             print("No streams.")
-        state.add_stream_listener(StreamLogger(state, options['verbose']))
+        state.add_stream_listener(StreamLogger(state, verbose))
 
-    if not options['no-circuits']:
+    if not no_circuits:
         if follow_string:
             follow_string += ' and Circuit'
         else:
@@ -189,12 +154,12 @@ def monitor_callback(options, state):
 
         if len(state.circuits):
             print("Current circuits:")
-            dump_circuits(state, verbose=options['verbose'])
+            dump_circuits(state, verbose=verbose)
         else:
             print("No circuits.")
-        state.add_circuit_listener(CircuitLogger(state, show_flags=options['verbose']))
+        state.add_circuit_listener(CircuitLogger(state, show_flags=verbose))
 
-    if not options['no-guards']:
+    if not no_guards:
         if len(state.entry_guards):
             print("Current Entry Guards:")
             for (name, router) in state.entry_guards.iteritems():
@@ -210,7 +175,7 @@ def monitor_callback(options, state):
         else:
             print("No Guard nodes!")
 
-    if not options['no-addr']:
+    if not no_addr:
         if follow_string:
             follow_string += ' and Address'
         else:
@@ -225,7 +190,7 @@ def monitor_callback(options, state):
             print("No address mappings.")
 
     all_done = defer.Deferred()
-    if not options['once']:
+    if not once:
         print('')
         print("Following new %s activity:" % follow_string)
 
@@ -238,37 +203,4 @@ def monitor_callback(options, state):
 
     else:
         all_done.callback(None)
-    return all_done
-
-
-class MonitorCommand(object):
-    zope.interface.implements(ICarmlCommand)
-
-    name = 'monitor'
-    help_text = """General information about a running Tor; streams, circuits, address-maps and event monitoring."""
-    controller_connection = True
-    build_state = True
-    options_class = MonitorOptions
-
-    def validate(self, options, mainoptions):
-        return
-        at_least_one = False
-        for k in ['streams', 'circuits', 'addr']:
-            if options[k]:
-                at_least_one = True
-                break
-        if not at_least_one and not (options['guards'] or options['log-level']):
-            raise RuntimeError("Must specify at least one of --streams, --circuits, "
-                               "--guards or --addr or --log-level")
-        if not options['once'] and not (at_least_one or options['log-level']):
-            raise RuntimeError("Can't follow just guards updates; add --once or exclude "
-                               " fewer things.")
-        if options['log-level'] and options['once']:
-            raise RuntimeError("--log-level with --once doesn't make sense.")
-
-    def run(self, options, mainoptions, state):
-        return monitor_callback(options, state)
-
-
-cmd = MonitorCommand()
-__all__ = ['cmd']
+    yield all_done

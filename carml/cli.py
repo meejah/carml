@@ -14,6 +14,10 @@ from . import carml_stream
 from . import carml_events
 from . import carml_circ
 from . import carml_cmd
+from . import carml_monitor
+
+
+LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
 
 
 class Config(object):
@@ -274,3 +278,52 @@ def stream(ctx, list, follow, attach, close, verbose):
         cfg, list, follow, attach, close, verbose,
     )
 
+
+@carml.command()
+@click.option(
+    '--once', '-o',
+    help='Exit after printing the current state.',
+    is_flag=True,
+)
+@click.option(
+    '--no-streams', '-s',
+    help='Without this, list Tor streams.',
+    is_flag=True,
+)
+@click.option(
+    '--no-circuits', '-c',
+    help='Without this, list Tor circuits.',
+    is_flag=True,
+)
+@click.option(
+    '--no-addr', '-a',
+    help='Without this, list address mappings (and expirations, with -f).',
+    is_flag=True,
+)
+@click.option(
+    '--no-guards', '-g',
+    help='Without this, Information about your current Guards.',
+    is_flag=True,
+)
+@click.option(
+    '--verbose', '-v',
+    help='Additional information. Circuits: ip, location, asn, country-code.',
+    is_flag=True,
+)
+@click.option(
+    '--log-level', '-l',
+    default=[],
+    type=click.Choice(LOG_LEVELS),
+    multiple=True,
+)
+@click.pass_context
+def monitor(ctx, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level):
+    """
+    General information about a running Tor; streams, circuits,
+    address-maps and event monitoring.
+    """
+    cfg = ctx.obj
+    return _run_command(
+        carml_monitor.run,
+        cfg, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level,
+    )
