@@ -1,4 +1,4 @@
-.PHONY: doc certs
+.PHONY: doc certs tag
 VERSION = 17.3.0
 
 venv:
@@ -13,6 +13,10 @@ release: dist dist-sigs
 release-upload:
 	twine upload -r pypi -c "carml v${VERSION} tarball" dist/carml-${VERSION}.tar.gz dist/carml-${VERSION}.tar.gz.asc
 	twine upload -r pypi -c "carml v${VERSION} wheel" dist/carml-${VERSION}-py2-none-any.whl dist/carml-${VERSION}-py2-none-any.whl.asc
+
+tag:
+# this doesn't actually work ... but it'd be nice if it did
+	$(git tag | grep v${VERSION}) || git tag --sign -u meejah@meejah.ca -m ${VERSION} v${VERSION}
 
 dist: dist/carml-${VERSION}-py2-none-any.whl dist/carml-${VERSION}.tar.gz
 dist-sigs: dist/carml-${VERSION}-py2-none-any.whl.asc dist/carml-${VERSION}.tar.gz.asc
