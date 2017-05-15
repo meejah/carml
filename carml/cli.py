@@ -17,6 +17,7 @@ from . import carml_cmd
 from . import carml_monitor
 from . import carml_newid
 from . import carml_pastebin
+from . import carml_copybin
 from . import carml_relay
 from . import carml_tbb
 from . import carml_temphs
@@ -584,4 +585,24 @@ def xplanet(ctx, all, execute, follow, arc_file, file):
     return _run_command(
         carml_xplanet.run,
         cfg, all, execute, follow, arc_file, file,
+    )
+
+
+@carml.command()
+@click.option(
+    '--service', '-s',
+    help='The endpoint you were given to download from (like "tor:xxxxx.onion:authCookie=xxxxxx".',
+    default=None,
+    required=True,
+    metavar='EP',
+)
+@click.pass_context
+def copybin(ctx, service):
+    """
+    Download something from a "pastebin" hidden-service.
+    """
+    cfg = ctx.obj
+    return _run_command(
+        carml_copybin.run,
+        cfg, service,
     )
