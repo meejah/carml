@@ -20,6 +20,7 @@ from . import carml_pastebin
 from . import carml_relay
 from . import carml_tbb
 from . import carml_temphs
+from . import carml_tmux
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -523,4 +524,24 @@ def temphs(ctx, port):
     return _run_command(
         carml_temphs.run,
         cfg, list(port),
+    )
+
+
+@carml.command()
+@click.pass_context
+def tmux(ctx):
+    """
+    Show some informantion in your tmux status.
+
+    Output for tmux's status-right. As in, put this in ~/.tmux.conf::
+
+        set-option -g status-utf8 on
+        set-option -g status-fg green
+        set -g status-right '#(carml tmux)'
+        set -g status-interval 2
+    """
+    cfg = ctx.obj
+    return _run_command(
+        carml_tmux.run,
+        cfg,
     )
