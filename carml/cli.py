@@ -17,6 +17,7 @@ from . import carml_cmd
 from . import carml_monitor
 from . import carml_newid
 from . import carml_pastebin
+from . import carml_relay
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -392,4 +393,36 @@ def pastebin(ctx, dry_run, once, file, count, keys):
     return _run_command(
         carml_pastebin.run,
         cfg, dry_run, once, file, count, keys,
+    )
+
+
+@carml.command()
+@click.pass_context
+@click.option(
+    '--list',
+    help='List all relays by hex ID.',
+    is_flag=True,
+)
+@click.option(
+    '--info',
+    default='',
+    help='Look up by fingerprint (or part of one).',
+)
+@click.option(
+    '--await',
+    default='',
+    help='Monitor NEWCONSENSUS for a fingerprint to exist',
+)
+def relay(ctx, list, info, await):
+    """
+    Information about Tor relays.
+    """
+    if not list and not info and not await:
+        raise click.UsageError(
+            "Require one of --list, --info, --await"
+        )
+    cfg = ctx.obj
+    return _run_command(
+        carml_relay.run,
+        cfg, list, info, await,
     )

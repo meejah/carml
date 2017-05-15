@@ -11,25 +11,7 @@ import zope.interface
 import humanize
 import txtorcon
 
-from carml.interface import ICarmlCommand
 from carml import util
-
-
-class RelayOptions(usage.Options):
-    def __init__(self):
-        super(RelayOptions, self).__init__()
-        self.longOpt.remove('version')
-        self.longOpt.remove('help')
-        self['delete'] = []
-
-    optFlags = [
-        ('list', None, 'List all relays, by hex ID.'),
-    ]
-
-    optParameters = [
-        ('info', None, '', 'Look up by fingerprint (or part of one).', str),
-        ('await', None, '', 'Monitor NEWCONSENSUS for a fingerprint to exist', str),
-    ]
 
 
 @defer.inlineCallbacks
@@ -45,12 +27,8 @@ def _print_router_info(router, agent=None):
     if agent:
         print(util.colors.italic("Extended information from" + util.colors.green(" onionoo.torproject.org") + ":"))
         details = yield router.get_onionoo_details(agent)
-        details['or_addresses'] = ', '.join(details['or_addresses'])
-        if False:
-            details = {
-                k: util.colors.bold(str(v))
-                for k, v in details.items()
-            }
+        details.setdefault('dir_address', '<none>')
+        details['or_addresses'] = ', '.join(details.get('or_addresses', []))
         print(
             "        platform: {platform}\n"
             "        runnning: {running}\n"
@@ -71,8 +49,9 @@ def _print_router_info(router, agent=None):
 def router_info(state, arg, tor):
     if len(arg) == 40 and not arg.startswith('$'):
         arg = '${}'.format(arg)
+
     try:
-        yield _print_router_info(state.routers[arg], agent=tor.web_agent())
+        relay = state.routers[arg]
     except KeyError:
         candidates = [
             r for r in state.all_routers
@@ -85,6 +64,8 @@ def router_info(state, arg, tor):
         for router in candidates:
             yield _print_router_info(router)
             print()
+    else:
+        yield _print_router_info(relay, agent=tor.web_agent())
 
 
 def _when_updated(state):
@@ -132,35 +113,12 @@ def router_list(state):
         print("{}".format(router.id_hex[1:]))
 
 
-class RelayCommand(object):
-    zope.interface.implements(ICarmlCommand)
-
-    # Attributes specified by ICarmlCommand
-    name = 'relay'
-    options_class = RelayOptions
-    help_text = 'Information about Tor relays.'
-    controller_connection = True
-    build_state = True
-
-    def validate(self, options, mainoptions):
-        """ICarmlCommand API"""
-
-    @defer.inlineCallbacks
-    def run(self, options, mainoptions, state):
-        """
-        ICarmlCommand API
-        """
-        endpoint_str = mainoptions['connect']
-        endpoint = endpoints.clientFromString(reactor, endpoint_str)
-        tor = yield txtorcon.connect(reactor, endpoint)
-        if options['info']:
-            yield router_info(state, options['info'], tor)
-        elif options['list']:
-            yield router_list(state)
-        elif options['await']:
-            yield router_await(state, options['await'])
-
-
-
-cmd = RelayCommand()
-__all__ = ['cmd']
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, list, info, await):
+    state = yield tor.create_state()
+    if info:
+        yield router_info(state, info, tor)
+    elif list:
+        yield router_list(state)
+    elif await:
+        yield router_await(state, await)
