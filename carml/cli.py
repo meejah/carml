@@ -19,6 +19,7 @@ from . import carml_newid
 from . import carml_pastebin
 from . import carml_relay
 from . import carml_tbb
+from . import carml_temphs
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -480,4 +481,46 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     return _run_command(
         carml_tbb.run,
         cfg, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch,
+    )
+
+
+@carml.command()
+@click.option(
+    '--port', '-p',
+    help='Port to pass-through (or "remote:local" for different local port)',
+    multiple=True,
+)
+@click.pass_context
+def temphs(ctx, port):
+    """
+    Add a temporary hidden-service to the Tor we connect to.
+
+    This keeps a hidden-service running as long as this command is
+    running with an arbitrary list of forwarded ports.
+    """
+    if len(port) == 0:
+        raise click.UsageError(
+            "Specify at least one port"
+        )
+
+    def _range_check(p):
+        try:
+            p = int(p)
+        except ValueError:
+            raise click.UsageError(
+                "{} is not an int".format(p)
+            )
+
+    for p in port:
+        if ':' in p:
+            remote, local = p.split(':')
+            _range_check(remote)
+            _range_check(local)
+        else:
+            _range_check(p)
+
+    cfg = ctx.obj
+    return _run_command(
+        carml_temphs.run,
+        cfg, list(port),
     )
