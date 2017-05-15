@@ -127,6 +127,11 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
         print("Launching Tor.")
         ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80)#, stealth_auth=authenticators)
         txtorcon.IProgressProvider(ep).add_progress_listener(_progress)
+        if keys:
+            ep.stealth_auth = [
+                'user_{}'.format(n)
+                for n in range(keys)
+            ]
     else:
         config = yield txtorcon.TorConfig.from_connection(connection)
         ep = txtorcon.TCPEphemeralHiddenServiceEndpoint(reactor, config, 80)
