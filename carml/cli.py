@@ -23,6 +23,7 @@ from . import carml_tbb
 from . import carml_temphs
 from . import carml_tmux
 from . import carml_xplanet
+from . import carml_graph
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -605,4 +606,22 @@ def copybin(ctx, service):
     return _run_command(
         carml_copybin.run,
         cfg, service,
+    )
+
+
+@carml.command()
+@click.option(
+    '--max', '-m',
+    help='Maximum scale, in bytes.',
+    default=1024*20,
+)
+@click.pass_context
+def graph(ctx, max):
+    """
+    A nice coloured console bandwidth-graph.
+    """
+    cfg = ctx.obj
+    return _run_command(
+        carml_graph.run,
+        cfg, max,
     )

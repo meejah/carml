@@ -19,22 +19,6 @@ from carml.util import dump_circuits, format_net_location, nice_router_name, col
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
 
 
-class GraphOptions(usage.Options):
-    optFlags = [
-    ]
-
-    optParameters = [
-        ('max', 'm', 1024*20, 'Maximum scale, in bytes.', int)
-    ]
-
-    def __init__(self):
-        """
-        We override this to get rid of the Twisted default --version and --help things
-        """
-        super(GraphOptions, self).__init__()
-        self.longOpt.remove('version')
-        ##self.longOpt.remove('help')
-
 class BandwidthTracker(object):
     '''
     This tracks bandwidth usage.
@@ -55,7 +39,10 @@ class BandwidthTracker(object):
     def on_bandwidth(self, s):
         r, w = map(int, s.split())
         self._bandwidth.append((r, w))
-        self.draw_bars()
+        try:
+            self.draw_bars()
+        except Exception as e:
+            print("bad {}".format(e))
 
     def on_stream_bandwidth(self, s):
         #print("stream", s)
@@ -85,7 +72,6 @@ class BandwidthTracker(object):
         print(left_bar(up, 20) + unichr(0x21f5) + right_bar(dn, 20) + status + streams)
 
 
-
 def left_bar(percent, width):
     '''
     Creates the green/left bar from a percentage and width. It uses
@@ -99,6 +85,7 @@ def left_bar(percent, width):
     rpart = unichr(0x258f - 7 + part) # for smooth bar
 
     return (' ' * (width - blocks)) + colors.negative(colors.green(rpart)) + colors.green(('+' * (blocks)), bg='green')
+
 
 def right_bar(percent, width):
     '''
@@ -114,32 +101,13 @@ def right_bar(percent, width):
 
     return colors.red('+' * (blocks), bg='red') + (colors.red(rpart)) + (' ' * (width - blocks))
 
+
 @inlineCallbacks
-def main(options, state):
-    proto = state.protocol
-    bwtracker = BandwidthTracker(options['max'], state)
-    yield proto.add_event_listener('BW', bwtracker.on_bandwidth)
-    yield proto.add_event_listener('STREAM_BW', bwtracker.on_stream_bandwidth)
+def run(reactor, cfg, tor, max):
+    state = yield tor.create_state()
+    bwtracker = BandwidthTracker(max, state)
+    yield tor.protocol.add_event_listener('BW', bwtracker.on_bandwidth)
+    yield tor.protocol.add_event_listener('STREAM_BW', bwtracker.on_stream_bandwidth)
 
     # infinite loop
     yield Deferred()
-
-
-class GraphCommand(object):
-    zope.interface.implements(ICarmlCommand)
-
-    name = 'graph'
-    help_text = 'A nice coloured console bandwidth-graph.'
-    controller_connection = True
-    build_state = True
-    options_class = GraphOptions
-
-    def validate(self, options, mainoptions):
-        pass
-
-    def run(self, options, mainoptions, state):
-        return main(options, state)
-
-
-cmd = GraphCommand()
-__all__ = ['cmd']
