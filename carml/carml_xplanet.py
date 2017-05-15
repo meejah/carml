@@ -18,29 +18,11 @@ from carml import util
 _log = functools.partial(log.msg, system='carml')
 
 
-class XPlanetOptions(usage.Options):
-    optFlags = [
-        ('all', 'A', 'Output all the routers, not just your own guards and circuits.'),
-        ('execute', 'x', 'Run the xplanet command in a tempdir'),
-        ('follow', 'f', 'Implies -x, re-running whenever a new circuit enters BUILT state.'),
-    ]
-
-    optParameters = [
-        ('arc-file', 'a', None, 'Also output current circuits in an xplanet "arc_file" compatible file.'),
-        ('file', '', None, 'Filename to dump markers too (default is stdout).'),
-    ]
-
-    def __init__(self):
-        super(XPlanetOptions, self).__init__()
-        self.longOpt.remove('version')
-        self.longOpt.remove('help')
-        self.args = None
-
-
-def dump_xplanet_files(options, mainoptions, state):
+def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
+    print("dumping", arc_file, file)
     unique_routers = set()
     routers_in_streams = set()
-    if options['all']:
+    if all:
         map(unique_routers.add, state.routers.values())
 
     else:
@@ -58,11 +40,9 @@ def dump_xplanet_files(options, mainoptions, state):
             map(unique_routers.add, state.guards.values())
 
     header = '## Auto-generated "%s" by carml' % time.asctime()
-    arcfile = None
-    if options['arc-file'] is not None:
-        arcfile = open(options['arc-file'], 'w')
-        arcfile.write(header + '\n')
-        arcfile.write('## format: lat0 lng0 lat1 lng1\n\n')
+    if arc_file is not None:
+        arc_file.write(header + '\n')
+        arc_file.write('## format: lat0 lng0 lat1 lng1\n\n')
 
         def gen_colors(r, g, b):
             while True:
@@ -84,18 +64,16 @@ def dump_xplanet_files(options, mainoptions, state):
 
         start_color = gen_start_colors()
         for circ in state.circuits.values():
-            arcfile.write('## circuit %d\n' % circ.id)
+            arc_file.write('## circuit %d\n' % circ.id)
             arc_colors = gen_colors(*start_color.next())
             for (i, link) in enumerate(circ.path[:-1]):
                 nxt = circ.path[i + 1]
                 if link.location.latlng[0] and nxt.location.latlng[0]:
-                    arcfile.write('%f %f ' % link.location.latlng)
-                    arcfile.write('%f %f ' % nxt.location.latlng)
-                    arcfile.write('color=%s thickness=2 # %s->%s\n' % (arc_colors.next(), link.id_hex, nxt.id_hex))
+                    arc_file.write('%f %f ' % link.location.latlng)
+                    arc_file.write('%f %f ' % nxt.location.latlng)
+                    arc_file.write('color=%s thickness=2 # %s->%s\n' % (arc_colors.next(), link.id_hex, nxt.id_hex))
 
-    markerfile = sys.stdout
-    if options['file']:
-        markerfile = open(options['file'], 'w')
+    markerfile = file
     markerfile.write(header + '\n')
     markerfile.write('## %d unique routers\n' % len(unique_routers))
     markerfile.write('## format: lat lng "name-or-hash" # hex-id\n\n')
@@ -128,7 +106,7 @@ def dump_xplanet_files(options, mainoptions, state):
                 if lat and lng:
                     markerfile.write('%02.5f %02.5f "%d:%s" color=green # %s\n' % (lat, lng, idx, router.unique_name, router.id_hex))
 
-    if not mainoptions['quiet']:
+    if not cfg.quiet:
         if misses == len(unique_routers):
             print 'NOTE: it seems NO routers had location information.'
             print "Things to try:"
@@ -165,7 +143,7 @@ def generate_circuit_builds(listener):
 
 
 @defer.inlineCallbacks
-def continuously_update_xplanet(options, mainoptions, state):
+def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
     listener = CircuitListener()
     gen = generate_circuit_builds(listener)
     state.add_circuit_listener(listener)
@@ -181,9 +159,6 @@ def continuously_update_xplanet(options, mainoptions, state):
     with open(cfg_fname, 'w') as f:
         f.write('''[earth]\n"Earth"\nmarker_file=%s\narc_file=%s\n''' % (marker_fname, arcs_fname))
 
-    options['file'] = marker_fname
-    options['arc-file'] = arcs_fname
-
     cmd = ['xplanet',
            '-num_times', '1',
            '-projection', 'rectangular',
@@ -191,40 +166,27 @@ def continuously_update_xplanet(options, mainoptions, state):
            ]
     os.chdir(tmpdir)
     while True:
-        dump_xplanet_files(options, mainoptions, state)
-        if not mainoptions['quiet']:
+        file = open(marker_fname, 'w')
+        arc_file = open(arcs_fname, 'w')
+        dump_xplanet_files(cfg, all, arc_file, file, follow, state)
+        if not cfg.quiet:
             print ' '.join(cmd), subprocess.check_output(cmd)
 
-        if not options['follow']:
+        if not follow:
             return
 
         circ = yield gen.next()
         print circ
 
 
-class XPlanetSubCommand(object):
-    zope.interface.implements(ICarmlCommand)
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, all, execute, follow, arc_file, file):
+    """
+    ICarmlCommand API
+    """
 
-    # Attributes specified by ICarmlCommand
-    name = 'xplanet'
-    help_text = 'Output an xplanet-compatible dump of all current relays.'
-    controller_connection = True
-    build_state = True
-    options_class = XPlanetOptions
-
-    def validate(self, options, mainoptions):
-        pass
-
-    @defer.inlineCallbacks
-    def run(self, options, mainoptions, state):
-        """
-        ICarmlCommand API
-        """
-
-        if options['follow'] or options['execute']:
-            yield continuously_update_xplanet(options, mainoptions, state)
-        else:
-            dump_xplanet_files(options, mainoptions, state)
-
-cmd = XPlanetSubCommand()
-__all__ = ['cmd']
+    state = yield tor.create_state()
+    if follow or execute:
+        yield continuously_update_xplanet(cfg, all, arc_file, file, follow, state)
+    else:
+        dump_xplanet_files(cfg, all, arc_file, file, follow, state)

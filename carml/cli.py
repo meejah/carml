@@ -21,6 +21,7 @@ from . import carml_relay
 from . import carml_tbb
 from . import carml_temphs
 from . import carml_tmux
+from . import carml_xplanet
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -544,4 +545,43 @@ def tmux(ctx):
     return _run_command(
         carml_tmux.run,
         cfg,
+    )
+
+
+@carml.command()
+@click.option(
+    '--all', '-A',
+    help='Output all the routers, not just your own guards and circuits.',
+    is_flag=True,
+)
+@click.option(
+    '--execute', '-x',
+    help='Run the xplanet command in a tempdir',
+    is_flag=True,
+)
+@click.option(
+    '--follow', '-f',
+    help='Implies -x, re-running whenever a new circuit enters BUILT state.',
+    is_flag=True,
+)
+@click.option(
+    '--arc-file', '-a',
+    help='Also output current circuits in an xplanet "arc_file" compatible file.',
+    default=None,
+    type=click.File('w'),
+)
+@click.option(
+    '--file',
+    help='Filename to dump markers too (default is stdout).',
+    default=sys.stdout,
+    type=click.File('w'),
+)
+@click.pass_context
+def xplanet(ctx, all, execute, follow, arc_file, file):
+    """
+    """
+    cfg = ctx.obj
+    return _run_command(
+        carml_xplanet.run,
+        cfg, all, execute, follow, arc_file, file,
     )
