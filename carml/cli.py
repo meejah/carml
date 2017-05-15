@@ -15,6 +15,7 @@ from . import carml_events
 from . import carml_circ
 from . import carml_cmd
 from . import carml_monitor
+from . import carml_newid
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -326,4 +327,18 @@ def monitor(ctx, verbose, no_guards, no_addr, no_circuits, no_streams, once, log
     return _run_command(
         carml_monitor.run,
         cfg, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level,
+    )
+
+
+@carml.command()
+@click.pass_context
+def newid(ctx):
+    """
+    Ask Tor for a new identity via NEWNYM, and listen for the response
+    acknowledgement.
+    """
+    cfg = ctx.obj
+    return _run_command(
+        carml_newid.run,
+        cfg,
     )
