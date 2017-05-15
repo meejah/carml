@@ -5,6 +5,7 @@ import sys
 from twisted.internet import defer, task
 from twisted.internet.endpoints import clientFromString
 from twisted.python.failure import Failure
+from twisted.python import usage, log
 
 import click
 import txtorcon
@@ -27,6 +28,45 @@ from . import carml_graph
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
+
+
+
+class LogObserver(object):
+    def __init__(self, timestamp=False, flush=True):
+        self.timestamp = timestamp
+        self.flush = flush
+        # we keep our own copies of these, because Twisted's
+        # startLoggingWithObserver overwrites them with its own
+        # monitoring machinery
+        self.stdout = sys.stdout
+        self.stderr = sys.stderr
+
+    def __call__(self, arg):
+        # we don't want to print out every little thing logged by
+        # Twisted or txtorcon, just what we output (which is always
+        # print()-ed)
+        try:
+            if not arg['printed']:
+                return
+        except KeyError:
+            return
+        msg = ' '.join(arg['message'])
+
+        # possibly add timestamps
+        if self.timestamp:
+            msg = util.colors.cyan(time.asctime()) + ': ' + msg
+
+        # figure out if we want stdout or stderr
+        out = self.stdout
+        if 'isError' in arg and arg['isError']:
+            out = self.stderr
+            if not msg and 'failure' in arg:
+                msg = util.colors.red('Error: ') + arg['failure'].getErrorMessage()
+
+        # actually print message
+        print(msg, file=out)
+        if self.flush:
+            out.flush()
 
 
 class Config(object):
@@ -81,6 +121,10 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, password, connect, colo
     cfg.password = password
     cfg.connect = connect
     cfg.color = color
+
+    # start logging
+    _log_observer = LogObserver()
+    log.startLoggingWithObserver(_log_observer, setStdout=False)
 
 
 def _run_command(cmd, cfg, *args, **kwargs):
