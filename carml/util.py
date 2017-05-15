@@ -40,6 +40,7 @@ def turn_off_color():
     global colors
     colors = NoColor()
 
+
 def pretty_progress(percent, size=10, ascii=False):
     """
     Displays a unicode or ascii based progress bar of a certain
@@ -61,7 +62,7 @@ def pretty_progress(percent, size=10, ascii=False):
 
         # unicode 0x2581 -> 2589 are vertical bar chunks, like rainbarf uses
         # and following are narrow -> wider bars
-        part = unichr(0x258f - part) # for smooth bar
+        part = unichr(0x258f - part)  # for smooth bar
         # part = unichr(0x2581 + part) # for neater-looking thing
 
     # hack for 100+ full so we don't print extra really-narrow/high bar
@@ -85,6 +86,7 @@ def wrap(text, width, prefix=''):
             line += ' ' + word
         lines.append(line)
     return '\n'.join(lines)
+
 
 def format_net_location(loc, verbose_asn=False):
     rtn = '(%s ' % loc.ip
@@ -124,14 +126,14 @@ def nice_router_name(router, color=True):
 
 def dump_circuits(state, verbose, show_countries=False):
     print('  %-4s | %-5s | %-42s | %-8s | %-12s' % ('ID', 'Age', 'Path (router names, ~ means no Named flag)', 'State', 'Purpose'))
-    print(' ------+-------+' + ('-'*44) + '+' + (10*'-') + '+' + (12*'-'))
+    print(' ------+-------+' + ('-' * 44) + '+' + (10 * '-') + '+' + (12 * '-'))
     circuits = state.circuits.values()
     circuits.sort(lambda a, b: cmp(a.id, b.id))
     now = datetime.datetime.utcnow()
     for circ in circuits:
         path = '->'.join([nice_router_name(x) for x in circ.path])
         plain_router_name = functools.partial(nice_router_name, color=False)
-        plain_path = '->'.join([plain_router_name(x) for x in circ.path])#map(plain_router_name, circ.path))
+        plain_path = '->'.join([plain_router_name(x) for x in circ.path])
         real_len = len(plain_path)
         if real_len > 42:
             # revert to uncoloured path since we don't know where ANSI controls are
@@ -142,15 +144,15 @@ def dump_circuits(state, verbose, show_countries=False):
             path = path + ((42 - real_len) * ' ')
         age = circ.age(now)
         if age > 300:
-            age = '%2dmin' % (age/60.0)
+            age = '%2dmin' % (age / 60.0)
         else:
             age = '%ds' % age
 
         # path is already padded to 42 chars, as it contains ANSI controls
         print(colors.bold('  %4d | %5s | %s | %-8s | %-12s' % (circ.id, age, path, circ.state, circ.purpose)))
-        #print str(circ.flags)
+        # print str(circ.flags)
         if show_countries:
-            print(' '*17, '->'.join(map(lambda x: x.location.countrycode, circ.path)))
+            print(' ' * 17, '->'.join(map(lambda x: x.location.countrycode, circ.path)))
         if verbose:
             padding = ' ' * 17
             print(' ' * 8, ', '.join([(str(k) + '=' + str(v)) for (k, v) in circ.flags.items()]))
@@ -158,5 +160,4 @@ def dump_circuits(state, verbose, show_countries=False):
                 if router.ip != 'unknown':
                     print(padding, '%s=%s' % (router.name,
                                               format_net_location(router.location)))
-    print(' ------+-------+' + ('-'*44) + '+' + (10*'-') + '+' + (12*'-'))
-
+    print(' ------+-------+' + ('-' * 44) + '+' + (10 * '-') + '+' + (12 * '-'))

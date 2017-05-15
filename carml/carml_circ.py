@@ -52,7 +52,7 @@ def delete_circuit(reactor, cfg, tor, circid, ifunused):
     unused_string = '(if unused) ' if ifunused else ''
     print('Deleting circuit %s"%s"...' % (unused_string, circid),)
 
-    state = yield tor.create_state() # bootstrap=False)
+    state = yield tor.create_state()  # bootstrap=False)
 
     kw = {}
     if ifunused:
@@ -118,7 +118,7 @@ def build_circuit(reactor, cfg, tor, routers):
                     return random.choice(state.entry_guards.values())
                 else:
                     return random.choice(state.routers.values())
-            r = state.routers.get(name) or state.routers.get('$'+name)
+            r = state.routers.get(name) or state.routers.get('$' + name)
             if r is None:
                 if len(name) == 40:
                     print("Couldn't look up %s, but it looks like an ID" % name)

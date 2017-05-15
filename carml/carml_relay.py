@@ -16,7 +16,7 @@ from carml import util
 
 @defer.inlineCallbacks
 def _print_router_info(router, agent=None):
-    #loc = yield router.get_location()
+    # loc = yield router.get_location()
     loc = yield router.location
     print("            name: {}".format(router.name))
     print("          hex id: {}".format(router.id_hex))
@@ -70,6 +70,7 @@ def router_info(state, arg, tor):
 
 def _when_updated(state):
     d = defer.Deferred()
+
     def _newconsensus(doc):
         # we actually don't care what's *in* the event, we just know
         # that the state has now updated...maybe a .when_updated() in

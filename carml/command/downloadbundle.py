@@ -40,7 +40,7 @@ class DownloadBundleOptions(usage.Options):
     optFlags = [
         ('beta', 'b', 'Use the beta release (if available).'),
         ('alpha', 'a', 'Use the alpha release (if available).'),
-#        ('hardened', 'H', 'Use a hardened release (if available).'),
+        # ('hardened', 'H', 'Use a hardened release (if available).'),
         ('use-clearnet', '', 'Do the download over plain Internet, NOT via Tor (NOT RECOMMENDED).'),
         ('system-keychain', 'K', 'Instead of creating a temporary keychain with provided Tor keys, '
          "use the current user\'s existing GnuPG keychain."),

@@ -100,6 +100,7 @@ class PasteBinSite(Site):
 def _progress(percent, tag, message):
     print(util.pretty_progress(percent), message)
 
+
 @defer.inlineCallbacks
 def run(reactor, cfg, tor, dry_run, once, file, count, keys):
     "ICarmlCommand API"
@@ -123,9 +124,9 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
     if dry_run:
         print('Not launching a Tor, listening on 8899.')
         ep = serverFromString(reactor, 'tcp:8899:interface=127.0.0.1')
-    elif True:#connection is None:
+    elif True:  # connection is None:
         print("Launching Tor.")
-        ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80)#, stealth_auth=authenticators)
+        ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80)
         txtorcon.IProgressProvider(ep).add_progress_listener(_progress)
         if keys:
             ep.stealth_auth = [

@@ -45,7 +45,6 @@ class BandwidthTracker(object):
             print("bad {}".format(e))
 
     def on_stream_bandwidth(self, s):
-        #print("stream", s)
         pass
 
     def draw_bars(self):
@@ -56,7 +55,7 @@ class BandwidthTracker(object):
 
         status = ' ' + colors.green('%.2f' % kbdn)
         status += '/'
-        status += colors.red('%.2f' % kbup) # + ' KiB write'
+        status += colors.red('%.2f' % kbup)  # + ' KiB write'
         status += ' KiB/s'
         status += ' (%d streams, %d circuits)' % (self.streams(), self.circuits())
 
@@ -82,7 +81,7 @@ def left_bar(percent, width):
     remain = (percent * width) - blocks
 
     part = int(remain * 8)
-    rpart = unichr(0x258f - 7 + part) # for smooth bar
+    rpart = unichr(0x258f - 7 + part)  # for smooth bar
 
     return (' ' * (width - blocks)) + colors.negative(colors.green(rpart)) + colors.green(('+' * (blocks)), bg='green')
 
@@ -95,7 +94,7 @@ def right_bar(percent, width):
     remain = (percent * width) - blocks
 
     part = int(remain * 8)
-    rpart = unichr(0x258f - part) # for smooth bar
+    rpart = unichr(0x258f - part)  # for smooth bar
     if part == 0:
         rpart = ' '
 

@@ -175,7 +175,7 @@ class StreamBandwidth(object):
     """
     The bandwidth-events of a single stream
     """
-    #__slots__ = ['_events']
+    #  __slots__ = ['_events']
 
     def __init__(self, max_live=20, roll_up=5):
         self._events = []  # list of 3-tuples
@@ -266,14 +266,14 @@ class BandwidthMonitor(txtorcon.StreamListenerMixin):
         print("succeeded", stream, stream.target_host, stream.target_addr)
 
     def stream_attach(self, stream, circuit):
-        pass #print("attach", stream)
+        pass
 
     def stream_detach(self, stream, **kw):
-        pass #print("detach", stream)
+        pass
 
     def stream_closed(self, stream, **kw):
         # print("closed", stream, self._active)
-        if not stream.id in self._active:
+        if stream.id not in self._active:
             print(
                 "Previously unknown stream to {stream.target_host} died".format(
                     stream=stream,
@@ -295,7 +295,6 @@ class BandwidthMonitor(txtorcon.StreamListenerMixin):
         pass
 
     def _stream_bw(self, bw):
-        #print("STREAM BW", bw)
         sid, wr, rd = [int(x) for x in bw.split()]
         try:
             bandwidth = self._active[sid]

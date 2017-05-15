@@ -197,6 +197,7 @@ def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_streams,
         def stop_reactor(arg):
             print("Tor disconnected.")
             all_done.callback(None)
+
         def error(fail):
             print(colors.red('Error:'), fail.getErrorMessage())
         state.protocol.on_disconnect.addErrback(error).addBoth(stop_reactor)

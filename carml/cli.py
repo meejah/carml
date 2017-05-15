@@ -30,7 +30,6 @@ from . import carml_graph
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
 
 
-
 class LogObserver(object):
     def __init__(self, timestamp=False, flush=True):
         self.timestamp = timestamp
@@ -184,6 +183,7 @@ def check_pypi(cfg, package, revision):
         carml_check_pypi.run,
         cfg, package, revision,
     )
+
 
 @carml.command()
 @click.option(
@@ -657,7 +657,7 @@ def copybin(ctx, service):
 @click.option(
     '--max', '-m',
     help='Maximum scale, in bytes.',
-    default=1024*20,
+    default=1024 * 20,
 )
 @click.pass_context
 def graph(ctx, max):

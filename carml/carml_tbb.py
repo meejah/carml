@@ -42,6 +42,8 @@ DEBUG = False
 # Twisted 14.0.0 can "just do" chain verification, I believe
 # at *least* verify this does a similar thing, or just depend on >=14
 # and delete it
+
+
 @zope.interface.implementer(IPolicyForHTTPS)
 class VerifyCertChainContextFactory(ssl.ClientContextFactory):
     def __init__(self, cert_chain):
