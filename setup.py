@@ -55,6 +55,5 @@ setup(
     data_files=[
         ('share/carml', ['README.rst', 'meejah.asc']),
         ('share/carml/doc/', ['doc/' + x for x in filter(lambda x: x.endswith('.rst'), os.listdir('doc'))]),
-        ('share/carml/example_extension/carml/command', ['example_extension/carml/command/blam.py']),
     ]
 )
