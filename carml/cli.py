@@ -18,6 +18,7 @@ from . import carml_monitor
 from . import carml_newid
 from . import carml_pastebin
 from . import carml_relay
+from . import carml_tbb
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -397,7 +398,6 @@ def pastebin(ctx, dry_run, once, file, count, keys):
 
 
 @carml.command()
-@click.pass_context
 @click.option(
     '--list',
     help='List all relays by hex ID.',
@@ -413,6 +413,7 @@ def pastebin(ctx, dry_run, once, file, count, keys):
     default='',
     help='Monitor NEWCONSENSUS for a fingerprint to exist',
 )
+@click.pass_context
 def relay(ctx, list, info, await):
     """
     Information about Tor relays.
@@ -425,4 +426,58 @@ def relay(ctx, list, info, await):
     return _run_command(
         carml_relay.run,
         cfg, list, info, await,
+    )
+
+
+@carml.command()
+@click.option(
+    '--beta', '-b',
+    help='Use the beta release (if available).',
+    is_flag=True,
+)
+@click.option(
+    '--alpha', '-a',
+    help='Use the alpha release (if available).',
+    is_flag=True,
+)
+#        ('hardened', 'H', 'Use a hardened release (if available).'),
+@click.option(
+    '--use-clearnet', '-',
+    help='Do the download over plain Internet, NOT via Tor (NOT RECOMMENDED).',
+    is_flag=True,
+)
+@click.option(
+    '--system-keychain', '-K',
+    help='Instead of creating a temporary keychain with provided Tor keys, use the current user\'s existing GnuPG keychain.',
+    is_flag=True,
+)
+@click.option(
+    '--no-extract', '-E',
+    help='Do not extract after downloading.',
+    is_flag=True,
+)
+@click.option(
+    '--no-launch', '-L',
+    help='Do not launch TBB after downloading.',
+    is_flag=True,
+)
+@click.pass_context
+def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
+    """
+    Download the lastest Tor Browser Bundle (with pinned SSL
+    certificates) and check the signatures.
+    """
+    if not no_extract:
+        try:
+            import backports.lzma
+        except ImportError:
+            raise click.UsageError(
+                'You need "backports.lzma" installed to do 7zip extraction.'
+                ' (Pass --no-extract to skip extraction).'
+            )
+
+    cfg = ctx.obj
+    return _run_command(
+        carml_tbb.run,
+        cfg, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch,
     )

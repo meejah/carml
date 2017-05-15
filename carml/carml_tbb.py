@@ -38,27 +38,6 @@ DEBUG = False
 # SOCKSPort to it for our own use, and connect to that (and then
 # delete it from config when done). Unless there's an easier way.
 
-
-class TbbOptions(usage.Options):
-
-    optFlags = [
-        ('beta', 'b', 'Use the beta release (if available).'),
-        ('alpha', 'a', 'Use the alpha release (if available).'),
-#        ('hardened', 'H', 'Use a hardened release (if available).'),
-        ('use-clearnet', '', 'Do the download over plain Internet, NOT via Tor (NOT RECOMMENDED).'),
-        ('system-keychain', 'K', 'Instead of creating a temporary keychain with provided Tor keys, '
-         "use the current user\'s existing GnuPG keychain."),
-        ('no-extract', 'E', 'Do not extract after downloading.'),
-        ('no-launch', 'L', 'Do not launch TBB after downloading.'),
-    ]
-
-    optParameters = []
-
-    def __init__(self):
-        super(TbbOptions, self).__init__()
-        self.longOpt.remove('version')
-
-
 # FIXME
 # Twisted 14.0.0 can "just do" chain verification, I believe
 # at *least* verify this does a similar thing, or just depend on >=14
@@ -281,186 +260,170 @@ def extract_7zip(fname):
     return None
 
 
-@zope.interface.implementer(ICarmlCommand, IPlugin)
-class TbbCommand(object):
-    name = 'tbb'
-    help_text = """Download the lastest Tor Browser Bundle (with pinned SSL certificates) and check the signatures."""
-    controller_connection = False
-    build_state = False
-    options_class = TbbOptions
+@defer.inlineCallbacks
+def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
+    # NOTE the middle cert changed on April 10 or thereabouts;
+    # still need to confirm this is legitimate?
+    chain = [ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/torproject.pem')),
+             ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/digicert-sha2.pem')),
+             ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/digicert-root-ca.pem')),
+             ]
+    cf = VerifyCertChainContextFactory(chain)
 
-    def validate(self, options, mainoptions):
-        if not options['no-extract']:  # and 'win' in platform.platform()[0].lower():
+    error_wrapper = None
+    if use_clearnet:
+        print(util.colors.red('WARNING') + ': downloading over plain Internet (not via Tor).')
+        agent = Agent(reactor, contextFactory=cf)
+
+    else:
+        try:
+            import txsocksx.http
+            conn = "tcp:127.0.0.1:9050"
+            tor_ep = endpoints.clientFromString(reactor, conn)
+            agent = txsocksx.http.SOCKS5Agent(reactor,
+                                              proxyEndpoint=tor_ep,
+                                              contextFactory=cf)
+
+            def nicer_error(fail):
+                if fail.trap(error.ConnectError):
+                    m = fail.getErrorMessage()
+                    raise RuntimeError("Couldn't contact Tor on SOCKS5 (via \"%s\"): %s" % (conn, m))
+                return fail
+            error_wrapper = nicer_error
+        except ImportError:
+            raise RuntimeError('You need "txsocksx" installed to download via Tor.')
+
+    uri = 'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
+    data = StringIO()
+    print('Getting recommended versions from "%s".' % uri)
+    d = download(agent, uri, data)
+
+    def ssl_errors(fail):
+        if hasattr(fail.value, 'reasons'):
+            msg = ''
+            for r in fail.value.reasons:
+                msg += str(r.value.args[-1])
+            raise RuntimeError(msg)
+        return fail
+    d.addErrback(ssl_errors)
+    if error_wrapper is not None:
+        d.addErrback(error_wrapper)
+    yield d
+
+    # valid platforms from check.torproject.org can be one of:
+    # 'Linux', 'MacOS' or 'Windows'
+    plat = platform.system().lower()
+    arch = platform.uname()[-2]
+    plat_to_tor = dict(linux='Linux', darwin='MacOS', windows='Win')
+    if plat not in plat_to_tor:
+        print('Unknown platform "%s".' % plat)
+        raise RuntimeError('Unknown platform "%s".' % plat)
+    tor_plat = plat_to_tor[plat]
+
+    try:
+        versions = json.loads(data.getvalue())
+
+    except:
+        print('Error getting versions; invalid JSON:')
+        print(data.getvalue())
+        raise RuntimeError('Invalid JSON:\n%s' % data.getvalue())
+
+    alpha_re = re.compile(r'[0-9]*.[0-9]*a[0-9]-(Windows|MacOS|Linux)')
+    beta_re = re.compile(r'[0-9]*.[0-9]*b[0-9]-(Windows|MacOS|Linux)')
+    hardened_re = re.compile(r'(.*)-hardened-(.*)')
+
+    print(util.wrap(', '.join(versions), 60, '  '))
+    alphas = filter(lambda x: alpha_re.match(x), versions)
+    betas = filter(lambda x: beta_re.match(x), versions)
+    # the 'hardened' browser names don't follow the pattern of the
+    # others; for now, just ignoring them... (XXX FIXME)
+    hardened = filter(lambda x: hardened_re.match(x), versions)
+    others = set(versions).difference(alphas, betas, hardened)
+    if alpha:
+        versions = alphas
+    elif beta:
+        versions = betas
+    else:
+        versions = others
+
+    if alphas:
+        print(util.colors.yellow("Note: there are alpha versions available; use --alpha to download."))
+    if betas:
+        print(util.colors.yellow("Note: there are beta versions available; use --beta to download."))
+    if hardened:
+        print(util.colors.yellow("Note: there are hardened versions available but we don't support downloading them yet."))
+
+    target_version = None
+    for v in versions:
+        if v.endswith(tor_plat):
+            target_version = v[:v.rfind('-')]
+
+    if target_version is None:
+        print("Can't find a version to download")
+        print("          My platform is: %s (%s)" % (plat, plat_to_tor[plat]))
+        print("  Potential versions are: %s" % ', '.join(versions))
+        if beta:
+            print("(Try without --beta)")
+        elif alpha:
+            print("(Try without --alpha)")
+        raise RuntimeError("Nothing to download found.")
+
+    # download the signature, then browser-bundle (if they don't
+    # already exist locally).
+    sig_fname, dist_fname = get_download_urls(plat, arch, target_version)
+    for to_download in [sig_fname, dist_fname]:
+        uri = bytes('https://www.torproject.org/dist/torbrowser/%s/%s' % (target_version, to_download))
+        if os.path.exists(to_download):
+            print(util.colors.red(to_download) + ': already exists, so not downloading.')
+        else:
+            def cleanup(failure, fname):
+                print('removing "%s"...' % fname)
+                os.unlink(fname)
+                return failure
+
+            f = open(to_download, 'w')
+            print('Downloading "%s".' % to_download)
+            d = download(agent, uri, f)
+            d.addErrback(cleanup, to_download)
+            yield d
+            f.close()
+
+    # ensure the signature matches
+    if verify_signature(sig_fname, system_gpg=system_keychain):
+        print(util.colors.green("Signature is good."))
+
+        if no_extract:
+            print("Download and signature check of the Tor Browser Bundle")
+            print("has SUCCEEDED.\n")
+            print("It is here: %s\n" % os.path.realpath(dist_fname))
+            extraction_instructions(dist_fname)
+            print("and then:")
+
+        else:
             try:
-                import backports.lzma
+                extract_7zip(dist_fname)
+                print("Tor Browser Bundle downloaded and extracted.")
+
             except ImportError:
                 msg = 'You need "backports.lzma" installed to do 7zip extraction.'
-                raise RuntimeError(msg)
-
-    @defer.inlineCallbacks
-    def run(self, options, mainoptions, connection):
-        # NOTE the middle cert changed on April 10 or thereabouts;
-        # still need to confirm this is legitimate?
-        chain = [ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/torproject.pem')),
-                 ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/digicert-sha2.pem')),
-                 ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/digicert-root-ca.pem')),
-                 ]
-        cf = VerifyCertChainContextFactory(chain)
-
-        error_wrapper = None
-        if options['use-clearnet']:
-            print(util.colors.red('WARNING') + ': downloading over plain Internet (not via Tor).')
-            agent = Agent(reactor, contextFactory=cf)
-
-        else:
-            try:
-                import txsocksx.http
-                conn = "tcp:127.0.0.1:9050"
-                tor_ep = endpoints.clientFromString(reactor, conn)
-                agent = txsocksx.http.SOCKS5Agent(reactor,
-                                                  proxyEndpoint=tor_ep,
-                                                  contextFactory=cf)
-
-                def nicer_error(fail):
-                    if fail.trap(error.ConnectError):
-                        m = fail.getErrorMessage()
-                        raise RuntimeError("Couldn't contact Tor on SOCKS5 (via \"%s\"): %s" % (conn, m))
-                    return fail
-                error_wrapper = nicer_error
-            except ImportError:
-                raise RuntimeError('You need "txsocksx" installed to download via Tor.')
-
-        uri = 'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
-        data = StringIO()
-        print('Getting recommended versions from "%s".' % uri)
-        d = download(agent, uri, data)
-
-        def ssl_errors(fail):
-            if hasattr(fail.value, 'reasons'):
-                msg = ''
-                for r in fail.value.reasons:
-                    msg += str(r.value.args[-1])
-                raise RuntimeError(msg)
-            return fail
-        d.addErrback(ssl_errors)
-        if error_wrapper is not None:
-            d.addErrback(error_wrapper)
-        yield d
-
-        # valid platforms from check.torproject.org can be one of:
-        # 'Linux', 'MacOS' or 'Windows'
-        plat = platform.system().lower()
-        arch = platform.uname()[-2]
-        plat_to_tor = dict(linux='Linux', darwin='MacOS', windows='Win')
-        if plat not in plat_to_tor:
-            print('Unknown platform "%s".' % plat)
-            raise RuntimeError('Unknown platform "%s".' % plat)
-        tor_plat = plat_to_tor[plat]
-
-        try:
-            versions = json.loads(data.getvalue())
-
-        except:
-            print('Error getting versions; invalid JSON:')
-            print(data.getvalue())
-            raise RuntimeError('Invalid JSON:\n%s' % data.getvalue())
-
-        alpha_re = re.compile(r'[0-9]*.[0-9]*a[0-9]-(Windows|MacOS|Linux)')
-        beta_re = re.compile(r'[0-9]*.[0-9]*b[0-9]-(Windows|MacOS|Linux)')
-        hardened_re = re.compile(r'(.*)-hardened-(.*)')
-
-        print(util.wrap(', '.join(versions), 60, '  '))
-        alphas = filter(lambda x: alpha_re.match(x), versions)
-        betas = filter(lambda x: beta_re.match(x), versions)
-        # the 'hardened' browser names don't follow the pattern of the
-        # others; for now, just ignoring them... (XXX FIXME)
-        hardened = filter(lambda x: hardened_re.match(x), versions)
-        others = set(versions).difference(alphas, betas, hardened)
-        if options['alpha']:
-            versions = alphas
-        elif options['beta']:
-            versions = betas
-        else:
-            versions = others
-
-        if alphas:
-            print(util.colors.yellow("Note: there are alpha versions available; use --alpha to download."))
-        if betas:
-            print(util.colors.yellow("Note: there are beta versions available; use --beta to download."))
-        if hardened:
-            print(util.colors.yellow("Note: there are hardened versions available but we don't support downloading them yet."))
-
-        target_version = None
-        for v in versions:
-            if v.endswith(tor_plat):
-                target_version = v[:v.rfind('-')]
-
-        if target_version is None:
-            print("Can't find a version to download")
-            print("          My platform is: %s (%s)" % (plat, plat_to_tor[plat]))
-            print("  Potential versions are: %s" % ', '.join(versions))
-            if options['beta']:
-                print("(Try without --beta)")
-            elif options['alpha']:
-                print("(Try without --alpha)")
-            raise RuntimeError("Nothing to download found.")
-
-        # download the signature, then browser-bundle (if they don't
-        # already exist locally).
-        sig_fname, dist_fname = get_download_urls(plat, arch, target_version)
-        for to_download in [sig_fname, dist_fname]:
-            uri = bytes('https://www.torproject.org/dist/torbrowser/%s/%s' % (target_version, to_download))
-            if os.path.exists(to_download):
-                print(util.colors.red(to_download) + ': already exists, so not downloading.')
-            else:
-                def cleanup(failure, fname):
-                    print('removing "%s"...' % fname)
-                    os.unlink(fname)
-                    return failure
-
-                f = open(to_download, 'w')
-                print('Downloading "%s".' % to_download)
-                d = download(agent, uri, f)
-                d.addErrback(cleanup, to_download)
-                yield d
-                f.close()
-
-        # ensure the signature matches
-        if verify_signature(sig_fname, system_gpg=bool(options['system-keychain'])):
-            print(util.colors.green("Signature is good."))
-
-            if options['no-extract']:
-                print("Download and signature check of the Tor Browser Bundle")
-                print("has SUCCEEDED.\n")
-                print("It is here: %s\n" % os.path.realpath(dist_fname))
+                print(util.colors.red('Error: ') + msg, isError=True)
                 extraction_instructions(dist_fname)
-                print("and then:")
 
-            else:
-                try:
-                    extract_7zip(dist_fname)
-                    print("Tor Browser Bundle downloaded and extracted.")
+            print("To run:")
 
-                except ImportError:
-                    msg = 'You need "backports.lzma" installed to do 7zip extraction.'
-                    print(util.colors.red('Error: ') + msg, isError=True)
-                    extraction_instructions(dist_fname)
-
-                print("To run:")
-
-            # running instructions
-            lang = dist_fname[-12:-7]
-            tbb_path = './tor-browser_%s/Browser/start-tor-browser' % lang
-            if options['no-launch']:
-                print("To run: %s" % tbb_path)
-            else:
-                print("running: %s" % tbb_path)
-                os.execl(tbb_path, tbb_path)
-
+        # running instructions
+        lang = dist_fname[-12:-7]
+        tbb_path = './tor-browser_%s/Browser/start-tor-browser' % lang
+        if no_launch:
+            print("To run: %s" % tbb_path)
         else:
-            print(util.colors.bold('Deleting tarball; signature verification failed.'))
-            os.unlink(dist_fname)
-            print('...however signature file is being kept for reference (%s).' % sig_fname)
+            print("running: %s" % tbb_path)
+            os.execl(tbb_path, tbb_path)
+
+    else:
+        print(util.colors.bold('Deleting tarball; signature verification failed.'))
+        os.unlink(dist_fname)
+        print('...however signature file is being kept for reference (%s).' % sig_fname)
 
 
 def verify_signature(fname, system_gpg=False):
@@ -506,8 +469,3 @@ def verify_signature(fname, system_gpg=False):
         if td:
             shutil.rmtree(td)
     return status
-
-
-# the IPlugin/getPlugin stuff from Twisted picks up any object from
-# here than implements ICarmlCommand -- so we need to instantiate one
-cmd = TbbCommand()
