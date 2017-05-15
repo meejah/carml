@@ -1,4 +1,4 @@
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import sys
 
@@ -625,3 +625,24 @@ def graph(ctx, max):
         carml_graph.run,
         cfg, max,
     )
+
+
+@carml.command()
+@click.argument(
+    'what'
+)
+@click.pass_context
+def help(ctx, what):
+    """
+    Print help on sub-commands (like "carml help events").
+    """
+    try:
+        cmd = globals()[what]
+    except KeyError:
+        print('No such command "carml {}".'.format(what))
+    else:
+        context = click.Context(cmd, ctx.parent, info_name=what)
+        fmt = context.make_formatter()
+        cmd.format_help(context, fmt)
+        for b in fmt.buffer:
+            print(b, end='')
