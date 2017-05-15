@@ -16,6 +16,7 @@ from . import carml_circ
 from . import carml_cmd
 from . import carml_monitor
 from . import carml_newid
+from . import carml_pastebin
 
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
@@ -341,4 +342,54 @@ def newid(ctx):
     return _run_command(
         carml_newid.run,
         cfg,
+    )
+
+
+@carml.command()
+@click.option(
+    '--dry-run', '-d',
+    help='Test locally; no Tor launch.',
+    is_flag=True,
+)
+@click.option(
+    '--once',
+    help='Same as --count=1.',
+    is_flag=True,
+)
+@click.option(
+    '--file', '-f',
+    default=sys.stdin,
+    type=click.File('rb'),
+    help='Filename to use as input (instead of stdin)',
+)
+@click.option(
+    '--count', '-n',
+    default=None,
+    help='Number of requests to serve.',
+    type=int,
+)
+@click.option(
+    '--keys', '-k',
+    default=0,
+    help='Number of authentication keys to create.',
+    type=int,
+)
+@click.pass_context
+def pastebin(ctx, dry_run, once, file, count, keys):
+    """
+    Put stdin (or a file) on a fresh hidden-service easily.
+    """
+    if count is not None and count < 0:
+        raise click.UsageError(
+            "--count must be positive"
+        )
+    if once and count is not None:
+        raise click.UsageError(
+            "Only specify one of --count or --once"
+        )
+
+    cfg = ctx.obj
+    return _run_command(
+        carml_pastebin.run,
+        cfg, dry_run, once, file, count, keys,
     )
