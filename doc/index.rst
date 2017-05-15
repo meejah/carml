@@ -51,9 +51,6 @@ feature enhancements) welcome `at GitHub
 on OFTC <irc://irc.oftc.net/tor-dev>`_ or via *meejah at meejah dot
 ca* with the public-key contained in the source.
 
-**I'm happy to accept a new logo** if it is open-licensed somehow;
-obviously I'm no logo-designer ;)
-
 
 Some Quick Examples
 -------------------

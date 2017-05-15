@@ -14,8 +14,6 @@ fingerprint.
 
 .. source-code:: shell-session
 
-   carml -q events 
+   carml -q events NEWCONSENSUS | $(grep 'lpXfw1/+uGEym58asExGOXAgzjE' || echo "oh no it's gone!")
 
 Wrapping this in a ``while`` loop would make it run forever.
-
-Alternatively, you could use a ``cron`` job to query 
