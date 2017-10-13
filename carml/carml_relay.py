@@ -4,6 +4,7 @@ import sys
 import datetime
 import functools
 import random
+from collections import defaultdict
 
 from twisted.python import usage, log
 from twisted.internet import defer, reactor, endpoints
@@ -28,6 +29,9 @@ def _print_router_info(router, agent=None):
         print(util.colors.italic("Extended information from" + util.colors.green(" onionoo.torproject.org") + ":"))
         details = yield router.get_onionoo_details(agent)
         details.setdefault('dir_address', '<none>')
+        details.setdefault('city_name', 'unknown')
+        details.setdefault('region_name', 'unknown')
+        details.setdefault('country_name', 'unknown')
         details['or_addresses'] = ', '.join(details.get('or_addresses', []))
         print(
             "        platform: {platform}\n"

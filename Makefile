@@ -26,7 +26,7 @@ dist/carml-${VERSION}-py2-none-any.whl:
 dist/carml-${VERSION}-py2-none-any.whl.asc: dist/carml-${VERSION}-py2-none-any.whl
 	gpg --verify dist/carml-${VERSION}-py2-none-any.whl.asc || gpg --no-version --detach-sign --armor --local-user meejah@meejah.ca dist/carml-${VERSION}-py2-none-any.whl
 
-sdist: setup.py 
+sdist: setup.py
 	python setup.py sdist
 dist/carml-${VERSION}.tar.gz: sdist
 dist/carml-${VERSION}.tar.gz.asc: dist/carml-${VERSION}.tar.gz

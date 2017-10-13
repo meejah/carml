@@ -47,6 +47,7 @@ def run(reactor, cfg, tor, list_events, once, show_event, count, events):
         else:
             ts = time.asctime()
             print("{} {}".format(ts, msg))
+        sys.stdout.flush()
 
     for e in events:
         e = e.upper()
