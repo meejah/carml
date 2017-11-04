@@ -11,6 +11,7 @@ from twisted.internet import defer, reactor, endpoints
 import zope.interface
 import humanize
 import txtorcon
+from txtorcon.router import hashFromHexId
 
 from carml import util
 
@@ -19,12 +20,13 @@ from carml import util
 def _print_router_info(router, agent=None):
     # loc = yield router.get_location()
     loc = yield router.location
-    print("            name: {}".format(router.name))
-    print("          hex id: {}".format(router.id_hex))
-    print("        location: {}".format(loc.countrycode))
-    print("         address: {}:{} (DirPort={})".format(router.ip, router.or_port, router.dir_port))
+    print(u"            name: {}".format(router.name))
+    print(u"          hex id: {}".format(router.id_hex))
+    print(u"id hash (base64): {}".format(hashFromHexId(router.id_hex)))
+    print(u"        location: {}".format(loc.countrycode))
+    print(u"         address: {}:{} (DirPort={})".format(router.ip, router.or_port, router.dir_port))
     diff = datetime.datetime.utcnow() - router.modified
-    print("  last published: {} ago".format(humanize.naturaldelta(diff)))
+    print(u"  last published: {} ago ({})".format(humanize.naturaldelta(diff), router.modified))
     if agent:
         print(util.colors.italic("Extended information from" + util.colors.green(" onionoo.torproject.org") + ":"))
         details = yield router.get_onionoo_details(agent)
@@ -34,42 +36,43 @@ def _print_router_info(router, agent=None):
         details.setdefault('country_name', 'unknown')
         details['or_addresses'] = ', '.join(details.get('or_addresses', []))
         print(
-            "        platform: {platform}\n"
-            "        runnning: {running}\n"
-            "     dir_address: {dir_address}\n"
-            "    OR addresses: {or_addresses}\n"
-            "        location: {city_name}, {region_name}, {country_name}\n"
-            "       host name: {host_name}\n"
-            "              AS: {as_number} ({as_name})\n"
-            "  last restarted: {last_restarted}\n"
-            "    last changed: {last_changed_address_or_port}\n"
-            "       last seen: {last_seen}\n"
-            "   probabilities: guard={guard_probability} middle={middle_probability} exit={exit_probability}\n"
-            "".format(**details)
+            u"        platform: {platform}\n"
+            u"        runnning: {running}\n"
+            u"     dir_address: {dir_address}\n"
+            u"    OR addresses: {or_addresses}\n"
+            u"        location: {city_name}, {region_name}, {country_name}\n"
+            u"       host name: {host_name}\n"
+            u"              AS: {as_number} ({as_name})\n"
+            u"  last restarted: {last_restarted}\n"
+            u"    last changed: {last_changed_address_or_port}\n"
+            u"       last seen: {last_seen}\n"
+            u"   probabilities: guard={guard_probability} middle={middle_probability} exit={exit_probability}\n"
+            u"".format(**details)
         )
 
 
 @defer.inlineCallbacks
 def router_info(state, arg, tor):
-    if len(arg) == 40 and not arg.startswith('$'):
-        arg = '${}'.format(arg)
+    for fp in arg:
+        if len(fp) == 40 and not fp.startswith('$'):
+            fp = '${}'.format(fp)
 
-    try:
-        relay = state.routers[arg]
-    except KeyError:
-        candidates = [
-            r for r in state.all_routers
-            if arg in r.name or arg in r.id_hex
-        ]
-        if not candidates:
-            print("Nothing found ({} routers total)".format(len(state.all_routers)))
-        if len(candidates) > 1:
-            print("Found multiple routers:")
-        for router in candidates:
-            yield _print_router_info(router)
-            print()
-    else:
-        yield _print_router_info(relay, agent=tor.web_agent())
+        try:
+            relay = state.routers[fp]
+        except KeyError:
+            candidates = [
+                r for r in state.all_routers
+                if fp in r.name or fp in r.id_hex
+            ]
+            if not candidates:
+                print("Nothing found ({} routers total)".format(len(state.all_routers)))
+            if len(candidates) > 1:
+                print("Found multiple routers:")
+            for router in candidates:
+                yield _print_router_info(router)
+                print()
+        else:
+            yield _print_router_info(relay, agent=tor.web_agent())
 
 
 def _when_updated(state):
