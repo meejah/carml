@@ -12,7 +12,6 @@ import humanize
 
 import txtorcon
 
-from carml.interface import ICarmlCommand
 from carml.util import dump_circuits, format_net_location, nice_router_name, colors, wrap
 
 LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]

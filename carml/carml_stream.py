@@ -10,7 +10,6 @@ from zope.interface import implementer
 import txtorcon
 import humanize
 
-from carml.interface import ICarmlCommand
 from carml import util
 
 

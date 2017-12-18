@@ -14,7 +14,6 @@ from twisted.protocols.basic import LineReceiver
 from twisted.internet import defer, reactor, stdio
 
 import txtorcon
-from carml.interface import ICarmlCommand
 from carml import util
 
 

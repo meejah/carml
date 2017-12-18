@@ -12,8 +12,6 @@ from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
 from twisted.web.client import readBody
 
-from carml.interface import ICarmlCommand
-
 import json
 import hashlib
 from base64 import urlsafe_b64encode

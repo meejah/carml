@@ -14,7 +14,6 @@ from twisted.web.static import Data
 from twisted.web.resource import Resource
 from twisted.web.server import Site
 
-from carml.interface import ICarmlCommand
 from carml import util
 import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint

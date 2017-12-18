@@ -11,7 +11,6 @@ import zope.interface
 import humanize
 import txtorcon
 
-from carml.interface import ICarmlCommand
 from carml import util
 
 

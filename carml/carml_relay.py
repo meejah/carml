@@ -23,8 +23,9 @@ def _print_router_info(router, agent=None):
     print(u"            name: {}".format(router.name))
     print(u"          hex id: {}".format(router.id_hex))
     print(u"id hash (base64): {}".format(hashFromHexId(router.id_hex)))
-    print(u"        location: {}".format(loc.countrycode))
+    print(u"        location: {}".format("unknown" if loc.countrycode is None else loc.countrycode))
     print(u"         address: {}:{} (DirPort={})".format(router.ip, router.or_port, router.dir_port))
+    print(u"           flags: {}".format(" ".join(router.flags)))
     diff = datetime.datetime.utcnow() - router.modified
     print(u"  last published: {} ago ({})".format(humanize.naturaldelta(diff), router.modified))
     if agent:

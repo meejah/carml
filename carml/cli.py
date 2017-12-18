@@ -10,6 +10,7 @@ from twisted.python import usage, log
 import click
 import txtorcon
 
+from . import carml_readme
 from . import carml_check_pypi
 from . import carml_stream
 from . import carml_events
@@ -161,6 +162,18 @@ def _run_command(cmd, cfg, *args, **kwargs):
     reactor.callWhenRunning(_go)
     reactor.run()
     sys.exit(codes[0])
+
+
+@carml.command()
+@click.pass_obj
+def readme(cfg):
+    """
+    Show the README.rst
+    """
+    return _run_command(
+        carml_readme.run,
+        cfg,
+    )
 
 
 @carml.command()
@@ -483,7 +496,7 @@ def relay(ctx, list, info, await, info_file):
             [x.strip() for x in info_file.readlines()]
         )
     else:
-        infos = [info]
+        infos = [info] if info else []
 
     cfg = ctx.obj
     return _run_command(

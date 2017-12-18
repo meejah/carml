@@ -13,7 +13,6 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Protocol
 
 
-from carml.interface import ICarmlCommand
 from carml import util
 import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint

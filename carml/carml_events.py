@@ -11,7 +11,6 @@ from twisted.internet import defer, reactor
 
 import txtorcon
 
-from carml.interface import ICarmlCommand
 from carml.util import dump_circuits
 from carml.util import format_net_location
 from carml.util import nice_router_name

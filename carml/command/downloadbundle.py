@@ -23,7 +23,6 @@ from twisted.web.client import Agent, ProxyAgent, RedirectAgent, ResponseDone, R
 from twisted.web.iweb import IPolicyForHTTPS
 from twisted.web.http_headers import Headers
 
-from carml.interface import ICarmlCommand
 from carml import util
 
 DEBUG = False
