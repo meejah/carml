@@ -10,6 +10,6 @@ humanize==0.5.1
 incremental==16.10.1
 ipaddress==1.0.17
 txsocksx==1.15.0.2
-txtorcon==0.19.1
+txtorcon==0.19.3
 wsgiref==0.1.2
 zope.interface==4.3.3
