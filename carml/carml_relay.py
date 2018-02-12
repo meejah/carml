@@ -92,12 +92,15 @@ def _when_updated(state):
 
 @defer.inlineCallbacks
 def _await_router(state, router_id):
+    print("Waiting for relay {}".format(router_id))
     while True:
         yield _when_updated(state)
+        print("received update")
         try:
             defer.returnValue(state.routers[router_id])
             return
         except KeyError:
+            print("{} not found; waiting".format(router_id))
             continue
 
 
