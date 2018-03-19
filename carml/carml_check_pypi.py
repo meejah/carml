@@ -18,9 +18,7 @@ from base64 import urlsafe_b64encode
 from distutils.version import LooseVersion
 
 import txtorcon
-import txsocksx
-import txsocksx.http
-import txsocksx.errors
+import txtorcon.socks
 
 
 @inlineCallbacks
@@ -77,7 +75,7 @@ def run(reactor, cfg, tor, package_name, package_version):
             # FIXME could stream this to the hasher with a custom
             # protocol, but teh RAMz they are cheap
             tarball = yield readBody(resp)
-        except txsocksx.errors.TTLExpired as e:
+        except txtorcon.socks.TtlExpiredError as e:
             print("Timed out: {}".format(e))
             continue
         except Exception as e:

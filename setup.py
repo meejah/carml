@@ -22,8 +22,8 @@ setup(
         'humanize',
         'ansicolors',
         'backports.lzma',
-        'txtorcon>=0.19.1',
-        'txsocksx>=1.15.0.2',
+        'txtorcon>=0.19.3',
+        'pyasn1',
         'click>=6.7',
     ],
     classifiers=[
@@ -39,6 +39,7 @@ setup(
         'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 2.6',
         'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3',
         'Topic :: System :: Networking',
         'Topic :: Internet :: Proxy Servers',
         'Topic :: Internet',

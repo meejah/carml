@@ -105,8 +105,8 @@ class CircuitLogger(txtorcon.CircuitListenerMixin):
                                                  flags(kw)))
 
 
+@zope.interface.implementer(txtorcon.interface.IAddrListener)
 class AddressLogger(object):
-    zope.interface.implements(txtorcon.interface.IAddrListener)
 
     def addrmap_added(self, addr):
         print('New address mapping: "%s" -> "%s".' % (addr.name, addr.ip))

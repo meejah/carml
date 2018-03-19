@@ -38,7 +38,7 @@ def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
         if False:
             map(unique_routers.add, state.guards.values())
 
-    header = '## Auto-generated "%s" by carml' % time.asctime()
+    header = '## Auto-generated "{}" by carml'.format(time.asctime())
     if arc_file is not None:
         arc_file.write(header + '\n')
         arc_file.write('## format: lat0 lng0 lat1 lng1\n\n')
@@ -63,18 +63,18 @@ def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
 
         start_color = gen_start_colors()
         for circ in state.circuits.values():
-            arc_file.write('## circuit %d\n' % circ.id)
+            arc_file.write('## circuit {}\n'.format(circ.id))
             arc_colors = gen_colors(*start_color.next())
             for (i, link) in enumerate(circ.path[:-1]):
                 nxt = circ.path[i + 1]
                 if link.location.latlng[0] and nxt.location.latlng[0]:
-                    arc_file.write('%f %f ' % link.location.latlng)
-                    arc_file.write('%f %f ' % nxt.location.latlng)
-                    arc_file.write('color=%s thickness=2 # %s->%s\n' % (arc_colors.next(), link.id_hex, nxt.id_hex))
+                    arc_file.write('{} {} '.format(*link.location.latlng))
+                    arc_file.write('{} {} '.format(*nxt.location.latlng))
+                    arc_file.write('color={} thickness=2 # {}->{}\n'.format(arc_colors.next(), link.id_hex, nxt.id_hex))
 
     markerfile = file
     markerfile.write(header + '\n')
-    markerfile.write('## %d unique routers\n' % len(unique_routers))
+    markerfile.write('## {} unique routers\n'.format(len(unique_routers)))
     markerfile.write('## format: lat lng "name-or-hash" # hex-id\n\n')
 
     misses = 0
@@ -107,22 +107,22 @@ def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
 
     if not cfg.quiet:
         if misses == len(unique_routers):
-            print 'NOTE: it seems NO routers had location information.'
-            print "Things to try:"
-            print " * install MaxMind IP geolocation database."
-            print " * pip install geoip"
+            print('NOTE: it seems NO routers had location information.')
+            print("Things to try:")
+            print(" * install MaxMind IP geolocation database.")
+            print(" * pip install geoip")
         else:
             if misses == 0:
-                print 'All routers had location information.'
+                print('All routers had location information.')
             else:
-                print '%d (%2.0f%%) routers with no geoip information.' % (misses, (float(misses) / len(unique_routers)) * 100.0)
+                print('%d (%2.0f%%) routers with no geoip information.' % (misses, (float(misses) / len(unique_routers)) * 100.0))
 
 
 class CircuitListener(txtorcon.CircuitListenerMixin):
     next_defer = None
 
     def _trigger_event(self, circuit, **kw):
-        print circuit
+        print(circuit)
         if self.next_defer:
             nd = self.next_defer
             self.next_defer = None
@@ -169,13 +169,13 @@ def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
         arc_file = open(arcs_fname, 'w')
         dump_xplanet_files(cfg, all, arc_file, file, follow, state)
         if not cfg.quiet:
-            print ' '.join(cmd), subprocess.check_output(cmd)
+            print(' '.join(cmd), subprocess.check_output(cmd))
 
         if not follow:
             return
 
         circ = yield gen.next()
-        print circ
+        print(circ)
 
 
 @defer.inlineCallbacks

@@ -10,6 +10,7 @@ from __future__ import print_function
 
 import datetime
 import functools
+from six import unichr
 
 import colors
 

@@ -1,6 +1,5 @@
 from __future__ import print_function
 
-from StringIO import StringIO
 import json
 import platform
 import os
@@ -11,6 +10,7 @@ import shutil
 import tempfile
 import functools
 import pkg_resources
+from six import BytesIO
 
 try:
     import OpenSSL
@@ -195,19 +195,20 @@ class ResponseReceiver(Protocol):
                     print('%0.2f MiB/s' % (self.total / (1024.0 * 1024) / elapsed))
 
     def connectionLost(self, reason):
+        print("boom {}".format(reason))
         self.all_done.callback(str(reason))
 
 
 @defer.inlineCallbacks
 def download(agent, uri, filelike):
-    resp = yield agent.request('GET', uri)
+    resp = yield agent.request(b'GET', uri)
     while resp.code == 302:
         newloc = resp.headers.getRawHeaders('location')[0]
         print("Following 302:", newloc)
-        resp = yield agent.request('GET', newloc)
+        resp = yield agent.request(b'GET', newloc.encode('ascii'))
 
     if resp.code != 200:
-        raise RuntimeError('Failed to download "%s": %d' % (uri, resp.code))
+        raise RuntimeError('Failed to download "{}": {}'.format(uri, resp.code))
     done = defer.Deferred()
     total = resp.length
     dl = ResponseReceiver(filelike, total, done)
@@ -271,44 +272,24 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
              ]
     cf = VerifyCertChainContextFactory(chain)
 
-    error_wrapper = None
     if use_clearnet:
         print(util.colors.red('WARNING') + ': downloading over plain Internet (not via Tor).')
         agent = Agent(reactor, contextFactory=cf)
 
     else:
-        try:
-            import txsocksx.http
-            conn = "tcp:127.0.0.1:9050"
-            tor_ep = endpoints.clientFromString(reactor, conn)
-            agent = txsocksx.http.SOCKS5Agent(reactor,
-                                              proxyEndpoint=tor_ep,
-                                              contextFactory=cf)
+        agent = tor.web_agent()
 
-            def nicer_error(fail):
-                if fail.trap(error.ConnectError):
-                    m = fail.getErrorMessage()
-                    raise RuntimeError("Couldn't contact Tor on SOCKS5 (via \"%s\"): %s" % (conn, m))
-                return fail
-            error_wrapper = nicer_error
-        except ImportError:
-            raise RuntimeError('You need "txsocksx" installed to download via Tor.')
-
-    uri = 'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
-    data = StringIO()
-    print('Getting recommended versions from "%s".' % uri)
+    uri = b'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
+    data = BytesIO()
+    print(u'Getting recommended versions from "{}".'.format(uri.decode('ascii')))
     d = download(agent, uri, data)
 
     def ssl_errors(fail):
         if hasattr(fail.value, 'reasons'):
-            msg = ''
-            for r in fail.value.reasons:
-                msg += str(r.value.args[-1])
+            msg = ''.join([str(r.value.args[-1]) for r in fail.value.reasons])
             raise RuntimeError(msg)
         return fail
     d.addErrback(ssl_errors)
-    if error_wrapper is not None:
-        d.addErrback(error_wrapper)
     yield d
 
     # valid platforms from check.torproject.org can be one of:
@@ -321,13 +302,14 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
         raise RuntimeError('Unknown platform "%s".' % plat)
     tor_plat = plat_to_tor[plat]
 
+    data_bytes = data.getvalue()
     try:
-        versions = json.loads(data.getvalue())
+        versions = json.loads(data_bytes.decode('utf8'))
 
     except:
         print('Error getting versions; invalid JSON:')
-        print(data.getvalue())
-        raise RuntimeError('Invalid JSON:\n%s' % data.getvalue())
+        print(data_bytes)
+        raise RuntimeError('Invalid JSON:\n{}'.format(data_bytes))
 
     alpha_re = re.compile(r'[0-9]*.[0-9]*a[0-9]-(Windows|MacOS|Linux)')
     beta_re = re.compile(r'[0-9]*.[0-9]*b[0-9]-(Windows|MacOS|Linux)')
@@ -373,7 +355,7 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     # already exist locally).
     sig_fname, dist_fname = get_download_urls(plat, arch, target_version)
     for to_download in [sig_fname, dist_fname]:
-        uri = bytes('https://www.torproject.org/dist/torbrowser/%s/%s' % (target_version, to_download))
+        uri = u'https://www.torproject.org/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
         if os.path.exists(to_download):
             print(util.colors.red(to_download) + ': already exists, so not downloading.')
         else:
@@ -382,7 +364,7 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
                 os.unlink(fname)
                 return failure
 
-            f = open(to_download, 'w')
+            f = open(to_download, 'wb')
             print('Downloading "%s".' % to_download)
             d = download(agent, uri, f)
             d.addErrback(cleanup, to_download)
@@ -409,8 +391,6 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
                 msg = 'You need "backports.lzma" installed to do 7zip extraction.'
                 print(util.colors.red('Error: ') + msg, isError=True)
                 extraction_instructions(dist_fname)
-
-            print("To run:")
 
         # running instructions
         lang = dist_fname[-12:-7]
