@@ -5,7 +5,7 @@
 # e.g., like: python -m carml
 
 import sys
-from carml import dispatch
+from carml import cli
 
 if __name__ == "__main__":
-    sys.exit(dispatch(sys.argv))
+    cli.carml()
