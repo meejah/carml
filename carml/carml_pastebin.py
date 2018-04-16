@@ -102,7 +102,6 @@ def _progress(percent, tag, message):
 
 @defer.inlineCallbacks
 def run(reactor, cfg, tor, dry_run, once, file, count, keys):
-    "ICarmlCommand API"
 
     to_share = file.read()
     file.close()

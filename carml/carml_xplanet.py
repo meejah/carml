@@ -180,9 +180,6 @@ def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
 
 @defer.inlineCallbacks
 def run(reactor, cfg, tor, all, execute, follow, arc_file, file):
-    """
-    ICarmlCommand API
-    """
 
     state = yield tor.create_state()
     if follow or execute:
