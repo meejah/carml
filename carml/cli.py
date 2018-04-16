@@ -565,8 +565,12 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     help='Port to pass-through (or "remote:local" for different local port)',
     multiple=True,
 )
+@click.option(
+    '--onion-version', '-V',
+    help='Which onion-service version to use (2 or 3)',
+)
 @click.pass_context
-def temphs(ctx, port):
+def temphs(ctx, port, onion_version):
     """
     Add a temporary hidden-service to the Tor we connect to.
 
@@ -586,18 +590,32 @@ def temphs(ctx, port):
                 "{} is not an int".format(p)
             )
 
+    validated_ports = []
     for p in port:
         if ':' in p:
             remote, local = p.split(':')
             _range_check(remote)
             _range_check(local)
+            validated_ports.append((int(remote), int(local)))
         else:
             _range_check(p)
+            validated_ports.append(int(p))
+
+    try:
+        onion_version = int(onion_version)
+        if onion_version not in (2, 3):
+            raise ValueError()
+    except ValueError:
+        raise click.UsageError(
+            "--onion-version must be 2 or 3"
+        )
 
     cfg = ctx.obj
     return _run_command(
         carml_temphs.run,
-        cfg, list(port),
+        cfg,
+        list(validated_ports),
+        onion_version,
     )
 
 

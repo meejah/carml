@@ -20,32 +20,34 @@ from txtorcon import TCPHiddenServiceEndpoint
 
 
 @inlineCallbacks
-def run(reactor, cfg, tor, ports):
+def run(reactor, cfg, tor, ports, version):
 
-    def info(msg):
-        if 'Service descriptor (v2) stored' in msg:
-            got_upload.callback(None)
-    got_upload = Deferred()
-    tor.protocol.add_event_listener('INFO', info)
+    print("Creating onion-service...")
+    def update(pct, tag, description):
+        print("  {}: {}".format(pct, description))
+    hs = yield tor.create_onion_service(ports, version=version, progress=update)
+    print("At least one HSDir successful")
 
-    hs = txtorcon.EphemeralHiddenService(ports)
-    yield hs.add_to_tor(tor.protocol)
-    print("Created HS", hs.hostname)
-
+    @inlineCallbacks
     def remove():
-        print("removing hidden-service")
-        return hs.remove_from_tor(tor.protocol)
+        print("removing onion-service")
+        yield hs.remove()
     reactor.addSystemEventTrigger('before', 'shutdown', remove)
 
-    print("...waiting for descriptor upload")
-    yield got_upload
-    print("Got one.", time.asctime())
+    print("Serving a service mapping the following ports:")
+    for port in ports:
+        if isinstance(port, tuple):
+            remote_port, local_port = port
+        else:
+            remote_port, local_port = port, port
+
+        print(
+            "{}:{} (remote) -> {} (local)".format(
+                hs.hostname,
+                remote_port,
+                local_port,
+            )
+        )
 
     # we never callback() on this, so we serve forever
-    d = Deferred()
-    yield d
-
-
-def _remove_service(config, hs):
-    config.hiddenservices.remove(hs)
-    return config.save()
+    yield Deferred()
