@@ -2,6 +2,7 @@ from __future__ import print_function
 import sys
 import time
 import functools
+from os import mkdir
 
 import zope.interface
 from twisted.python import usage, log
@@ -17,6 +18,7 @@ from twisted.web.server import Site
 from carml import util
 import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
+from txtorcon import AuthBasic, AuthStealth
 
 
 class _PasteBinHTTPChannel(HTTPChannel):
@@ -122,18 +124,20 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
     if dry_run:
         print('Not launching a Tor, listening on 8899.')
         ep = serverFromString(reactor, 'tcp:8899:interface=127.0.0.1')
-    elif True:  # connection is None:
+    elif tor is None:
         print("Launching Tor.")
-        ep = TCPHiddenServiceEndpoint.global_tor(reactor, 80)
-        txtorcon.IProgressProvider(ep).add_progress_listener(_progress)
-        if keys:
-            ep.stealth_auth = [
-                'user_{}'.format(n)
-                for n in range(keys)
-            ]
+        tor = yield txtorcon.launch(reactor, progress_updates=_progress)
+
+    if not authenticators:
+        ep = tor.create_onion_endpoint(80, version=3)
     else:
-        config = yield txtorcon.TorConfig.from_connection(connection)
-        ep = txtorcon.TCPEphemeralHiddenServiceEndpoint(reactor, config, 80)
+        #mkdir('./foo')
+        ep = tor.create_filesystem_authenticated_onion_endpoint(
+            80,
+            version=2,
+            hs_dir='./foo',
+            auth=AuthStealth(authenticators),
+        )
 
     root = Resource()
     data = Data(to_share, 'text/plain')
@@ -142,12 +146,16 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
     if once:
         count = 1
     port = yield ep.listen(PasteBinSite(root, max_requests=count))
+    onion = port.onion_service
 
     if keys == 0:
         clients = None
     else:
         # FIXME
-        clients = port.tor_config.hiddenservices[0].clients
+        clients = [
+            onion.get_client(n)
+            for n in onion.client_names()
+        ]
 
     host = port.getHost()
     if dry_run:
@@ -159,7 +167,7 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
         print('They can set one using the "HidServAuth" torrc option, like so:')
         print("")
         for client in clients:
-            print("  HidServAuth %s %s" % (client[0], client[1]))
+            print("  HidServAuth %s %s" % (client.hostname, client.auth_token))
         print("")
         print("Alternatively, any Twisted endpoint-aware client can be given")
         print("the following string as an endpoint:")
