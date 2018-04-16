@@ -44,7 +44,7 @@ class PasteBinSite(Site):
 
     def __init__(self, *args, **kw):
         self.active_clients = 0
-        self.active_requests = set()
+        self.active_requests = list()
         self._max_requests = kw['max_requests']
         del kw['max_requests']
         self._request_count = 0
@@ -61,7 +61,7 @@ class PasteBinSite(Site):
 
         # track requsts currently being serviced, so we can nicely
         # shut them off
-        self.active_requests.add(request)
+        self.active_requests.append(request)
         request.notifyFinish().addBoth(self._forget_request, request)
 
         # see if we've reached the maximum requests
@@ -75,7 +75,7 @@ class PasteBinSite(Site):
         return Site.getResourceFor(self, request)
 
     def _forget_request(self, request, _):
-        self.active_requests.discard(request)
+        self.active_requests.remove(request)
 
     def _got_client(self):
         self.active_clients += 1
