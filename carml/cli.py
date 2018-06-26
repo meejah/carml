@@ -568,6 +568,7 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
 @click.option(
     '--onion-version', '-V',
     help='Which onion-service version to use (2 or 3)',
+    default=3,
 )
 @click.pass_context
 def temphs(ctx, port, onion_version):
