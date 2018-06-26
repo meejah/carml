@@ -5,7 +5,7 @@ import re
 from setuptools import setup, find_packages
 
 
-__version__ = '18.0.0'
+__version__ = '18.1.0'
 
 
 setup(
@@ -22,7 +22,7 @@ setup(
         'humanize',
         'ansicolors',
         'backports.lzma',
-        'txtorcon>=0.19.3',
+        'txtorcon>=18.0.0',
         'pyasn1',
         'click>=6.7',
     ],
