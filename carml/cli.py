@@ -137,9 +137,9 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
 def _run_command(cmd, cfg, *args, **kwargs):
 
     @defer.inlineCallbacks
-    def _startup(reactor):
+    async def _startup(reactor):
         ep = clientFromString(reactor, cfg.connect)
-        tor = yield txtorcon.connect(reactor, ep)
+        tor = await txtorcon.connect(reactor, ep)
 
         if cfg.debug_protocol:
 
@@ -178,12 +178,12 @@ def _run_command(cmd, cfg, *args, **kwargs):
 
 
         if cfg.info:
-            info = yield tor.protocol.get_info('version', 'status/version/current', 'dormant')
+            info = await tor.protocol.get_info('version', 'status/version/current', 'dormant')
             click.echo(
                 'Connected to a Tor version "{version}" (status: '
                 '{status/version/current}).\n'.format(**info)
             )
-        yield defer.maybeDeferred(
+        await defer.maybeDeferred(
             cmd, reactor, cfg, tor, *args, **kwargs
         )
 
