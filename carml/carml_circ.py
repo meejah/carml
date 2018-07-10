@@ -110,13 +110,12 @@ def build_circuit(reactor, cfg, tor, routers):
         routers = None
         # print("Building new circuit, letting Tor select the path.")
     else:
-        def find_router(args):
-            position, name = args
+        def find_router(position, name):
             if name == '*':
                 if position == 0:
-                    return random.choice(state.entry_guards.values())
+                    return random.choice(list(state.entry_guards.values()))
                 else:
-                    return random.choice(state.routers.values())
+                    return random.choice(list(state.routers.values()))
             r = state.routers.get(name) or state.routers.get('$' + name)
             if r is None:
                 if len(name) == 40:
@@ -125,8 +124,11 @@ def build_circuit(reactor, cfg, tor, routers):
                 else:
                     raise RuntimeError('Couldn\'t find router "%s".' % name)
             return r
-        routers = map(find_router, enumerate(routers))
-        print("Building circuit:", '->'.join(map(util.nice_router_name, routers)))
+        routers = [
+            find_router(i, r)
+            for i, r in enumerate(routers)
+        ]
+        print("Building circuit:", '->'.join(util.nice_router_name(r) for r in routers))
 
     try:
         circ = yield state.build_circuit(routers)

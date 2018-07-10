@@ -36,7 +36,7 @@ class BandwidthTracker(object):
         return len(self._state.streams)
 
     def on_bandwidth(self, s):
-        r, w = map(int, s.split())
+        r, w = (int(x) for x in s.split())
         self._bandwidth.append((r, w))
         try:
             self.draw_bars()
@@ -63,7 +63,7 @@ class BandwidthTracker(object):
         for stream in self._state.streams.values():
             # ...there's a window during which it may not be attached yet
             if stream.circuit:
-                circpath = '>'.join(map(lambda r: r.location.countrycode, stream.circuit.path))
+                circpath = '>'.join(r.location.countrycode for r in stream.circuit.path)
                 streams += ' ' + circpath
         if len(streams) > 24:
             streams = streams[:21] + '...'

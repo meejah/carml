@@ -18,8 +18,8 @@ LOG_LEVELS = ["DEBUG", "INFO", "NOTICE", "WARN", "ERR"]
 
 
 def string_for_circuit(state, circuit):
-    # path = '->'.join(map(lambda x: x.location.countrycode or '??', circuit.path))
-    path = '->'.join(map(lambda x: x.name, circuit.path))
+    # path = '->'.join(x.location.countrycode or '??' for x in circuit.path)
+    path = '->'.join(x.name for x in circuit.path)
     state = circuit.state
     if state.lower() == 'failed':
         state = colors.red(state)
@@ -54,8 +54,8 @@ class StreamLogger(txtorcon.StreamListenerMixin):
     def stream_attach(self, stream, circuit):
         print(string_for_stream(self.state, stream))
         if self.verbose:
-            m = "  " + '->'.join(map(lambda x: nice_router_name(x), circuit.path))
-            m += ' (%s)' % ' '.join(map(lambda r: str(r.location.countrycode), circuit.path))
+            m = "  " + '->'.join(nice_router_name(x) for x in circuit.path)
+            m += ' (%s)' % ' '.join(str(r.location.countrycode) for r in circuit.path)
             print(m)
 
     def stream_failed(self, stream, remote_reason='', **kw):

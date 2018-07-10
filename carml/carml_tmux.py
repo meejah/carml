@@ -27,16 +27,16 @@ def run(reactor, cfg, tor):
         for r in circ.path:
             if r.location.countrycode is None:
                 yield r.get_country()
-        path = u'>'.join(map(lambda r: r.location.countrycode or '__', circ.path))
+        path = u'>'.join(r.location.countrycode or '__' for r in circ.path)
         print(u"#[fg=colour28,bg=colour22]{}#[fg=colour46,bg=colour28]{}".format(path, len(circ.streams)), end='')
 
     total = len(state.circuits)
-    general = len(filter(lambda c: c.purpose == 'GENERAL', state.circuits.values()))
+    general = len([c for c in state.circuits.values() if c.purpose == 'GENERAL'])
     part = int(general / float(total) * 7)
-    msg = u'#[fg=colour32,bg=colour17]%s' % unichr(0x2581 + part)
+    msg = u'#[fg=colour32,bg=colour17]%s' % chr(0x2581 + part)
     print(msg.encode('utf8'), end='')
 
-    onions = len(filter(lambda c: c.purpose.startswith('HS_'), state.circuits.values()))
+    onions = len([c for c in state.circuits.values() if c.purpose.startswith('HS_')])
     part = int(onions / float(total) * 7)
-    msg = u'#[fg=colour160,bg=colour17]%s' % unichr(0x2581 + part)
+    msg = u'#[fg=colour160,bg=colour17]%s' % chr(0x2581 + part)
     print(msg.encode('utf8'))

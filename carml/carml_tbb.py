@@ -147,7 +147,11 @@ class VerifyCertChainContextFactory(ssl.ClientContextFactory):
             for (k, v) in cert.get_subject().get_components():
                 if k == 'CN':
                     cn = v
-            common_name = ''.join(map(lambda x: str(x[1]), filter(lambda x: x[0] == 'CN', cert.get_subject().get_components())))
+            common_name = ''.join(
+                str(x[1])
+                for x in cert.get_subject().get_components()
+                if x[0] == 'CN'
+            )
             print('Certificate chain verification failed for "%s".' % common_name)
             print('Public key md5 hash is "%s" but wanted "%s".' % (verify_pubkey.keyHash(), golden_pubkey.keyHash()))
             print('Dumping failing certificate to "failed.pem".')
@@ -316,11 +320,9 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     hardened_re = re.compile(r'(.*)-hardened-(.*)')
 
     print(util.wrap(', '.join(versions), 60, '  '))
-    alphas = filter(lambda x: alpha_re.match(x), versions)
-    betas = filter(lambda x: beta_re.match(x), versions)
-    # the 'hardened' browser names don't follow the pattern of the
-    # others; for now, just ignoring them... (XXX FIXME)
-    hardened = filter(lambda x: hardened_re.match(x), versions)
+    alphas = [x for x in versions if alpha_re.match(x)]
+    betas = [x for x in versions if beta_re.match(x)]
+    hardened = [x for x in versions if  hardened_re.match(x)]
     others = set(versions).difference(alphas, betas, hardened)
     if alpha:
         versions = alphas

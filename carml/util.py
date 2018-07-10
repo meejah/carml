@@ -106,7 +106,7 @@ def format_net_location(loc, verbose_asn=False):
     if loc.city and loc.city[0]:
         if comma:
             rtn += ', '
-        rtn += ','.join([x.decode('utf8', 'replace') for x in loc.city])
+        rtn += ','.join(loc.city)
         comma = True
     return rtn.strip() + ')'
 
@@ -128,8 +128,7 @@ def nice_router_name(router, color=True):
 def dump_circuits(state, verbose, show_countries=False):
     print('  %-4s | %-5s | %-42s | %-8s | %-12s' % ('ID', 'Age', 'Path (router names, ~ means no Named flag)', 'State', 'Purpose'))
     print(' ------+-------+' + ('-' * 44) + '+' + (10 * '-') + '+' + (12 * '-'))
-    circuits = state.circuits.values()
-    circuits.sort(lambda a, b: cmp(a.id, b.id))
+    circuits = sorted(state.circuits.values(), key=lambda x: x.id)
     now = datetime.datetime.utcnow()
     for circ in circuits:
         path = '->'.join([nice_router_name(x) for x in circ.path])
@@ -153,7 +152,7 @@ def dump_circuits(state, verbose, show_countries=False):
         print(colors.bold('  %4d | %5s | %s | %-8s | %-12s' % (circ.id, age, path, circ.state, circ.purpose)))
         # print str(circ.flags)
         if show_countries:
-            print(' ' * 17, '->'.join(map(lambda x: x.location.countrycode, circ.path)))
+            print(' ' * 17, '->'.join(x.location.countrycode for x in circ.path))
         if verbose:
             padding = ' ' * 17
             print(' ' * 8, ', '.join([(str(k) + '=' + str(v)) for (k, v) in circ.flags.items()]))

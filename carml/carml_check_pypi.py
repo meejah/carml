@@ -97,7 +97,7 @@ def run(reactor, cfg, tor, package_name, package_version):
         if digest != digests[0][-1]:
             print("Fearsome Warning! Mismatched digest!!")
             feel_fear = True
-            print("Circuit:", '->'.join(map(lambda r: r.hex_id, circ.path)))
+            print("Circuit:", '->'.join(r.hex_id for r in circ.path))
 
     if feel_fear:
         print("****\n  Something fishy!\n****")
