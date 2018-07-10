@@ -104,7 +104,7 @@ def attach_streams_to_circuit(circid, state):
     return d
 
 
-def list_streams(state, verbose):
+async def list_streams(state, verbose):
     print("Streams:")
     for stream in state.streams.values():
         flags = str(stream.flags) if stream.flags else 'no flags'
@@ -247,7 +247,7 @@ class BandwidthMonitor(txtorcon.StreamListenerMixin):
     async def create(reactor, state):
         bw = BandwidthMonitor(reactor, state)
         await bw._setup()
-        defer.returnValue(bw)
+        return bw
 
     def __init__(self, reactor, state):
         self._reactor = reactor  # just IReactorClock required?
@@ -300,7 +300,7 @@ class BandwidthMonitor(txtorcon.StreamListenerMixin):
         bandwidth.add_bandwidth(self._reactor.seconds(), rd, wr)
 
     async def _setup(self):
-        await self._state.add_stream_listener(self)
+        self._state.add_stream_listener(self)
         await self._state.protocol.add_event_listener('STREAM_BW', self._stream_bw)
 
 
@@ -308,6 +308,8 @@ async def monitor_streams(state, verbose):
     print("monitor", state, verbose)
     from twisted.internet import reactor
     bw = await BandwidthMonitor.create(reactor, state)
+    print(bw)
+    await defer.Deferred()
 
 
 async def run(reactor, cfg, tor, list, follow, attach, close, verbose):

@@ -17,8 +17,7 @@ from carml import util
 
 
 async def _print_router_info(router, agent=None):
-    # loc = await router.get_location()
-    loc = await router.location
+    loc = await router.get_location()
     print(u"            name: {}".format(router.name))
     print(u"          hex id: {}".format(router.id_hex))
     print(u"id hash (base64): {}".format(hashFromHexId(router.id_hex)))
@@ -94,8 +93,7 @@ async def _await_router(state, router_id):
         await _when_updated(state)
         print("received update")
         try:
-            defer.returnValue(state.routers[router_id])
-            return
+            return state.routers[router_id]
         except KeyError:
             print("{} not found; waiting".format(router_id))
             continue
@@ -116,7 +114,7 @@ async def router_await(state, arg):
     await _print_router_info(r)
 
 
-def router_list(state):
+async def router_list(state):
     for router in state.all_routers:
         print("{}".format(router.id_hex[1:]))
 
