@@ -82,6 +82,12 @@ class Config(object):
 @click.option('--quiet', '-q', help='Some commands show less information with this option.', is_flag=True)
 @click.option('--debug', '-d', help='Debug; print stack traces on error.', is_flag=True)
 @click.option(
+    '--debug-protocol',
+    help=('Low-level protocol debugging. Wraps Twisted methods and dumps all bytes '
+          'read/written in different colours'),
+    is_flag=True,
+)
+@click.option(
     '--password', '-p',
     help=('Password to authenticate to Tor with. Using cookie-based authentication'
           'is much easier if you are on the same machine.'),
@@ -103,7 +109,7 @@ class Config(object):
     help='Colourize output using ANSI commands.',
 )
 @click.pass_context
-def carml(ctx, timestamps, no_color, info, quiet, debug, password, connect, color):
+def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, password, connect, color):
     if (color == 'always' and no_color) or \
        (color == 'no' and no_color is True):
         raise click.UsageError(
@@ -121,6 +127,7 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, password, connect, colo
     cfg.password = password
     cfg.connect = connect
     cfg.color = color
+    cfg.debug_protocol = debug_protocol
 
     # start logging
     _log_observer = LogObserver()
