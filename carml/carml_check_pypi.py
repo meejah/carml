@@ -27,9 +27,15 @@ def run(reactor, cfg, tor, package_name, package_version):
     state = yield tor.create_state()
 
     # download metadata from PyPI over "any" circuit
-    uri = b'https://pypi.python.org/pypi/{}/json'.format(package_name)
+    uri = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
     print("downloading: '{}'".format(uri))
-    resp = yield agent.request(b'GET', uri)
+    resp = yield agent.request(b'GET', uri.encode('utf8'))
+
+    while resp.code in (301, 302):
+        newloc = resp.headers.getRawHeaders('location')[0]
+        print("Following {} redirect to '{}':".format(resp.code, newloc))
+        resp = yield agent.request(b'GET', newloc.encode('ascii'))
+
     data = yield readBody(resp)
     data = json.loads(data)
 
@@ -44,7 +50,7 @@ def run(reactor, cfg, tor, package_name, package_version):
 
     for url in data['releases'][package_version]:
         if url['packagetype'] == 'sdist':
-            sdist_url = url['url'].encode('UTF8')
+            sdist_url = url['url']
             version = url['filename']
     if sdist_url is None:
         print("Error: couldn't find any 'sdist' URLs")
@@ -71,7 +77,7 @@ def run(reactor, cfg, tor, package_name, package_version):
 
         try:
             agent = circ.web_agent(reactor, tor._default_socks_endpoint())
-            resp = yield agent.request(b'GET', sdist_url)
+            resp = yield agent.request(b'GET', sdist_url.encode('utf8'))
             # FIXME could stream this to the hasher with a custom
             # protocol, but teh RAMz they are cheap
             tarball = yield readBody(resp)
