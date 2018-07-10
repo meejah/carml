@@ -67,7 +67,7 @@ class BandwidthTracker(object):
                 streams += ' ' + circpath
         if len(streams) > 24:
             streams = streams[:21] + '...'
-        print(left_bar(up, 20) + unichr(0x21f5) + right_bar(dn, 20) + status + streams)
+        print(left_bar(up, 20) + chr(0x21f5) + right_bar(dn, 20) + status + streams)
 
 
 def left_bar(percent, width):
@@ -80,7 +80,7 @@ def left_bar(percent, width):
     remain = (percent * width) - blocks
 
     part = int(remain * 8)
-    rpart = unichr(0x258f - 7 + part)  # for smooth bar
+    rpart = chr(0x258f - 7 + part)  # for smooth bar
 
     return (' ' * (width - blocks)) + colors.negative(colors.green(rpart)) + colors.green(('+' * (blocks)), bg='green')
 
@@ -93,7 +93,7 @@ def right_bar(percent, width):
     remain = (percent * width) - blocks
 
     part = int(remain * 8)
-    rpart = unichr(0x258f - part)  # for smooth bar
+    rpart = chr(0x258f - part)  # for smooth bar
     if part == 0:
         rpart = ' '
 
