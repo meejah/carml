@@ -141,8 +141,44 @@ def _run_command(cmd, cfg, *args, **kwargs):
         ep = clientFromString(reactor, cfg.connect)
         tor = yield txtorcon.connect(reactor, ep)
 
+        if cfg.debug_protocol:
+
+            click.echo("Low-level protocol debugging: ", nl=False)
+            click.echo(click.style("data we write to Tor, ", fg='blue'), nl=False)
+            click.echo(click.style("data from Tor", fg='yellow') + ".")
+
+            def write_wrapper(data):
+                tail = data
+                while len(tail):
+                    head, tail = tail.split('\r\n', 1)
+                    click.echo(">>> " + click.style(head, fg='blue'), nl=False)
+                click.echo()
+                return orig_write(data)
+            orig_write = tor.protocol.transport.write
+            tor.protocol.transport.write = write_wrapper
+
+            def read_wrapper(data):
+                tail = data
+                while '\r\n' in tail:
+                    head, tail = tail.split('\r\n', 1)
+                    if not read_wrapper.write_prefix:
+                        click.echo(click.style(head, fg='yellow'))
+                        read_wrapper.write_prefix = True
+                    else:
+                        click.echo("<<< " + click.style(head, fg='yellow'))
+                if len(tail):
+                    click.echo("<<< " + click.style(tail, fg='yellow'), nl=False)
+                    read_wrapper.write_prefix = False
+                else:
+                    click.echo()
+                return orig_read(data)
+            read_wrapper.write_prefix = True
+            orig_read = tor.protocol.dataReceived
+            tor.protocol.dataReceived = read_wrapper
+
+
         if cfg.info:
-            info = yield tor.proto.get_info('version', 'status/version/current', 'dormant')
+            info = yield tor.protocol.get_info('version', 'status/version/current', 'dormant')
             click.echo(
                 'Connected to a Tor version "{version}" (status: '
                 '{status/version/current}).\n'.format(**info)
