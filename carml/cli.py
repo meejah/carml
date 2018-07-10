@@ -136,7 +136,6 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
 
 def _run_command(cmd, cfg, *args, **kwargs):
 
-    @defer.inlineCallbacks
     async def _startup(reactor):
         ep = clientFromString(reactor, cfg.connect)
         tor = await txtorcon.connect(reactor, ep)
@@ -198,7 +197,7 @@ def _run_command(cmd, cfg, *args, **kwargs):
         return None
 
     def _go():
-        d = _startup(reactor)
+        d = defer.ensureDeferred(_startup(reactor))
         d.addErrback(_the_bad_stuff)
         d.addBoth(lambda _: reactor.stop())
 

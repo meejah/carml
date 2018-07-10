@@ -199,7 +199,6 @@ class ResponseReceiver(Protocol):
                     print('%0.2f MiB/s' % (self.total / (1024.0 * 1024) / elapsed))
 
     def connectionLost(self, reason):
-        print("boom {}".format(reason))
         self.all_done.callback(str(reason))
 
 
