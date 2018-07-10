@@ -71,7 +71,7 @@ def flags(d):
     """
 
     r = ''
-    for (k, v) in d.iteritems():
+    for (k, v) in d.items():
         if k.upper() == k:
             r += '%s=%s ' % (k, v)
     return r
@@ -161,7 +161,7 @@ def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_streams,
     if not no_guards:
         if len(state.entry_guards):
             print("Current Entry Guards:")
-            for (name, router) in state.entry_guards.iteritems():
+            for (name, router) in state.entry_guards.items():
                 if not router.from_consensus:
                     if router.name:
                         print("  %s: %s (not in consensus)" % (router.name, router.id_hex))
