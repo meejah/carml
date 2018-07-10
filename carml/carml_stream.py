@@ -123,8 +123,7 @@ def list_streams(state, verbose):
             print("     to %s:%s, from %s" % (h, stream.target_port, source))
 
 
-@defer.inlineCallbacks
-def close_stream(state, streamid):
+async def close_stream(state, streamid):
     class DetermineStreamClosure(object):
         def __init__(self, target_id, done_d):
             self.circ_id = str(target_id)
@@ -152,7 +151,7 @@ def close_stream(state, streamid):
     sys.stdout.flush()
 
     try:
-        status = yield state.streams[streamid].close()
+        status = await state.streams[streamid].close()
         status = status.state
         monitor.already_deleted = True
     except txtorcon.TorProtocolError as e:
@@ -165,7 +164,7 @@ def close_stream(state, streamid):
 
     print('%s (waiting for CLOSED)...' % status)
     sys.stdout.flush()
-    yield gone_d
+    await gone_d
     # we're now awaiting a callback via CIRC events indicating
     # that our stream has entered state CLOSED
 
@@ -245,10 +244,9 @@ class StreamBandwidth(object):
 
 class BandwidthMonitor(txtorcon.StreamListenerMixin):
     @staticmethod
-    @defer.inlineCallbacks
-    def create(reactor, state):
+    async def create(reactor, state):
         bw = BandwidthMonitor(reactor, state)
-        yield bw._setup()
+        await bw._setup()
         defer.returnValue(bw)
 
     def __init__(self, reactor, state):
@@ -301,29 +299,26 @@ class BandwidthMonitor(txtorcon.StreamListenerMixin):
             bandwidth = self._active[sid] = StreamBandwidth()
         bandwidth.add_bandwidth(self._reactor.seconds(), rd, wr)
 
-    @defer.inlineCallbacks
-    def _setup(self):
-        yield self._state.add_stream_listener(self)
-        yield self._state.protocol.add_event_listener('STREAM_BW', self._stream_bw)
+    async def _setup(self):
+        await self._state.add_stream_listener(self)
+        await self._state.protocol.add_event_listener('STREAM_BW', self._stream_bw)
 
 
-@defer.inlineCallbacks
-def monitor_streams(state, verbose):
+async def monitor_streams(state, verbose):
     print("monitor", state, verbose)
     from twisted.internet import reactor
-    bw = yield BandwidthMonitor.create(reactor, state)
+    bw = await BandwidthMonitor.create(reactor, state)
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, list, follow, attach, close, verbose):
-    state = yield tor.create_state()
+async def run(reactor, cfg, tor, list, follow, attach, close, verbose):
+    state = await tor.create_state()
     if attach:
-        yield attach_streams_to_circuit(attach, state)
+        await attach_streams_to_circuit(attach, state)
     elif list:
-        yield list_streams(state, verbose)
+        await list_streams(state, verbose)
     elif close:
-        yield close_stream(state, close)
+        await close_stream(state, close)
     elif follow:
         d = defer.succeed(None)
-        yield monitor_streams(state, verbose)
-        yield defer.Deferred()
+        await monitor_streams(state, verbose)
+        await defer.Deferred()

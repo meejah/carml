@@ -16,9 +16,8 @@ import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor):
-    state = yield tor.create_state()
+async def run(reactor, cfg, tor):
+    state = await tor.create_state()
 
     for circ in state.circuits.values():
         if len(circ.streams) == 0:
@@ -26,7 +25,7 @@ def run(reactor, cfg, tor):
 
         for r in circ.path:
             if r.location.countrycode is None:
-                yield r.get_country()
+                await r.get_country()
         path = u'>'.join(r.location.countrycode or '__' for r in circ.path)
         print(u"#[fg=colour28,bg=colour22]{}#[fg=colour46,bg=colour28]{}".format(path, len(circ.streams)), end='')
 

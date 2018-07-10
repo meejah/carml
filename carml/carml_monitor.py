@@ -119,9 +119,8 @@ def tor_log(level, msg):
     print('%s: %s' % (level, msg))
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level):
-    state = yield tor.create_state()
+async def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level):
+    state = await tor.create_state()
 
     follow_string = None
     if log_level and not once:
@@ -203,4 +202,4 @@ def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_streams,
 
     else:
         all_done.callback(None)
-    yield all_done
+    await all_done

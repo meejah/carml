@@ -8,7 +8,6 @@ from twisted.python import usage
 from twisted.plugin import IPlugin
 from twisted.internet import reactor
 from twisted.internet import endpoints
-from twisted.internet.defer import inlineCallbacks
 from twisted.internet.task import deferLater
 from twisted.web.client import readBody
 
@@ -21,22 +20,21 @@ import txtorcon
 import txtorcon.socks
 
 
-@inlineCallbacks
-def run(reactor, cfg, tor, package_name, package_version):
+async def run(reactor, cfg, tor, package_name, package_version):
     agent = tor.web_agent()
-    state = yield tor.create_state()
+    state = await tor.create_state()
 
     # download metadata from PyPI over "any" circuit
     uri = 'https://pypi.python.org/pypi/{}/json'.format(package_name)
     print("downloading: '{}'".format(uri))
-    resp = yield agent.request(b'GET', uri.encode('utf8'))
+    resp = await agent.request(b'GET', uri.encode('utf8'))
 
     while resp.code in (301, 302):
         newloc = resp.headers.getRawHeaders('location')[0]
         print("Following {} redirect to '{}':".format(resp.code, newloc))
-        resp = yield agent.request(b'GET', newloc.encode('ascii'))
+        resp = await agent.request(b'GET', newloc.encode('ascii'))
 
-    data = yield readBody(resp)
+    data = await readBody(resp)
     data = json.loads(data)
 
     # did we get a valid sdist URL somewhere?
@@ -62,9 +60,9 @@ def run(reactor, cfg, tor, package_name, package_version):
     # and record the sha256 hash each time.
     digests = []
     while len(digests) < 3:
-        circ = yield state.build_circuit()
+        circ = await state.build_circuit()
         try:
-            yield circ.when_built()
+            await circ.when_built()
         except Exception:
             print("Circuit failed; trying another.")
             continue
@@ -77,10 +75,10 @@ def run(reactor, cfg, tor, package_name, package_version):
 
         try:
             agent = circ.web_agent(reactor, tor._default_socks_endpoint())
-            resp = yield agent.request(b'GET', sdist_url.encode('utf8'))
+            resp = await agent.request(b'GET', sdist_url.encode('utf8'))
             # FIXME could stream this to the hasher with a custom
             # protocol, but teh RAMz they are cheap
-            tarball = yield readBody(resp)
+            tarball = await readBody(resp)
         except txtorcon.socks.TtlExpiredError as e:
             print("Timed out: {}".format(e))
             continue

@@ -182,9 +182,7 @@ def _run_command(cmd, cfg, *args, **kwargs):
                 'Connected to a Tor version "{version}" (status: '
                 '{status/version/current}).\n'.format(**info)
             )
-        await defer.maybeDeferred(
-            cmd, reactor, cfg, tor, *args, **kwargs
-        )
+        await cmd(reactor, cfg, tor, *args, **kwargs)
 
     from twisted.internet import reactor
     codes = [0]

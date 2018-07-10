@@ -4,8 +4,7 @@ import pkg_resources
 import click
 
 
-# @defer.inlineCallbacks
-def run(reactor, cfg, tor):
+async def run(reactor, cfg, tor):
     readme = pkg_resources.resource_string('carml', '../README.rst')
     # uhm, docutils documentation is confusing as all hell and no good
     # examples of "convert this rST string to anything else" .. :/ but

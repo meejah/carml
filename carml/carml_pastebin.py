@@ -102,8 +102,7 @@ def _progress(percent, tag, message):
     print(util.pretty_progress(percent), message)
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, dry_run, once, file, count, keys):
+async def run(reactor, cfg, tor, dry_run, once, file, count, keys):
 
     to_share = file.read()
     file.close()
@@ -126,7 +125,7 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
         ep = serverFromString(reactor, 'tcp:8899:interface=127.0.0.1')
     elif tor is None:
         print("Launching Tor.")
-        tor = yield txtorcon.launch(reactor, progress_updates=_progress)
+        tor = await txtorcon.launch(reactor, progress_updates=_progress)
 
     if not authenticators:
         ep = tor.create_onion_endpoint(80, version=3)
@@ -145,7 +144,7 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
 
     if once:
         count = 1
-    port = yield ep.listen(PasteBinSite(root, max_requests=count))
+    port = await ep.listen(PasteBinSite(root, max_requests=count))
     onion = port.onion_service
 
     if keys == 0:
@@ -194,4 +193,4 @@ def run(reactor, cfg, tor, dry_run, once, file, count, keys):
                                   lambda: print(util.colors.red('Shutting down.')))
     # we never callback() on this, so we serve forever
     d = defer.Deferred()
-    yield d
+    await d

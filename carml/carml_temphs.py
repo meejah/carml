@@ -7,7 +7,7 @@ import zope.interface
 from twisted.python import usage, log
 from twisted.plugin import IPlugin
 from twisted.internet import reactor
-from twisted.internet.defer import Deferred, inlineCallbacks
+from twisted.internet.defer import Deferred
 from twisted.internet.endpoints import serverFromString
 from twisted.web.http import HTTPChannel
 from twisted.web.static import Data
@@ -19,20 +19,18 @@ import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
 
-@inlineCallbacks
-def run(reactor, cfg, tor, ports, version):
+async def run(reactor, cfg, tor, ports, version):
 
     print("Creating onion-service...")
     def update(pct, tag, description):
-        print("  {}: {}".format(pct, description))
-    hs = yield tor.create_onion_service(ports, version=version, progress=update, await_all_uploads=True)
+        print("  {}: {}".format(util.pretty_progress(pct), description))
+    hs = await tor.create_onion_service(ports, version=version, progress=update, await_all_uploads=True)
     # print("At least one HSDir successful")
     print("published to all HSDirs")
 
-    @inlineCallbacks
-    def remove():
+    async def remove():
         print("removing onion-service")
-        yield hs.remove()
+        await hs.remove()
     reactor.addSystemEventTrigger('before', 'shutdown', remove)
 
     print("Running an Onion Service mapping the following ports:")
@@ -51,4 +49,4 @@ def run(reactor, cfg, tor, ports, version):
         )
 
     # we never callback() on this, so we serve forever
-    yield Deferred()
+    await Deferred()

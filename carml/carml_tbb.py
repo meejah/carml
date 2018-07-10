@@ -202,13 +202,12 @@ class ResponseReceiver(Protocol):
         self.all_done.callback(str(reason))
 
 
-@defer.inlineCallbacks
-def download(agent, uri, filelike):
-    resp = yield agent.request(b'GET', uri)
+async def download(agent, uri, filelike):
+    resp = await agent.request(b'GET', uri)
     while resp.code == 302:
         newloc = resp.headers.getRawHeaders('location')[0]
         print("Following 302:", newloc)
-        resp = yield agent.request(b'GET', newloc.encode('ascii'))
+        resp = await agent.request(b'GET', newloc.encode('ascii'))
 
     if resp.code != 200:
         raise RuntimeError('Failed to download "{}": {}'.format(uri, resp.code))
@@ -216,7 +215,7 @@ def download(agent, uri, filelike):
     total = resp.length
     dl = ResponseReceiver(filelike, total, done)
     resp.deliverBody(dl)
-    yield done
+    await done
 
 
 def get_download_urls(plat, arch, target_version):
@@ -265,8 +264,7 @@ def extract_7zip(fname):
     return None
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
+async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     # NOTE the middle cert changed on April 10 or thereabouts;
     # still need to confirm this is legitimate?
     chain = [ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/torproject.pem')),
@@ -285,15 +283,14 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     uri = b'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
     data = BytesIO()
     print(u'Getting recommended versions from "{}".'.format(uri.decode('ascii')))
-    d = download(agent, uri, data)
 
-    def ssl_errors(fail):
-        if hasattr(fail.value, 'reasons'):
+    try:
+        await download(agent, uri, data)
+    except Exception as e:
+        if hasattr(value, 'reasons'):
             msg = ''.join([str(r.value.args[-1]) for r in fail.value.reasons])
             raise RuntimeError(msg)
-        return fail
-    d.addErrback(ssl_errors)
-    yield d
+        raise
 
     # valid platforms from check.torproject.org can be one of:
     # 'Linux', 'MacOS' or 'Windows'
@@ -369,7 +366,7 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
             print('Downloading "%s".' % to_download)
             d = download(agent, uri, f)
             d.addErrback(cleanup, to_download)
-            yield d
+            await d
             f.close()
 
     # ensure the signature matches

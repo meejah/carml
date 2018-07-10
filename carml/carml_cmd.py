@@ -72,14 +72,13 @@ def do_cmd(proto, args):
 # see cmd_info for an alternate way to implement this via a method
 # with attributes and "zope.interface.implementsDirectly()"
 # trying out both ways to see what feels better
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, args):
+async def run(reactor, cfg, tor, args):
     if len(args) == 0:
         print("(no command to run)")
 
     elif len(args) == 1 and args[0] == '-':
         all_done = defer.Deferred()
         stdio.StandardIO(StdioLineReceiver(all_done, tor.protocol))
-        yield all_done
+        await all_done
     else:
-        yield do_cmd(tor.protocol, args)
+        await do_cmd(tor.protocol, args)

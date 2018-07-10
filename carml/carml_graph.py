@@ -11,7 +11,7 @@ import humanize
 
 import txtorcon
 
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import Deferred
 
 from carml.util import dump_circuits, format_net_location, nice_router_name, colors, wrap
 
@@ -100,12 +100,11 @@ def right_bar(percent, width):
     return colors.red('+' * (blocks), bg='red') + (colors.red(rpart)) + (' ' * (width - blocks))
 
 
-@inlineCallbacks
-def run(reactor, cfg, tor, max):
-    state = yield tor.create_state()
+async def run(reactor, cfg, tor, max):
+    state = await tor.create_state()
     bwtracker = BandwidthTracker(max, state)
-    yield tor.protocol.add_event_listener('BW', bwtracker.on_bandwidth)
-    yield tor.protocol.add_event_listener('STREAM_BW', bwtracker.on_stream_bandwidth)
+    await tor.protocol.add_event_listener('BW', bwtracker.on_bandwidth)
+    await tor.protocol.add_event_listener('STREAM_BW', bwtracker.on_stream_bandwidth)
 
     # infinite loop
-    yield Deferred()
+    await Deferred()

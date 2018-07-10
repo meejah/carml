@@ -138,8 +138,7 @@ def generate_circuit_builds(listener):
     return generator()
 
 
-@defer.inlineCallbacks
-def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
+async def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
     listener = CircuitListener()
     gen = generate_circuit_builds(listener)
     state.add_circuit_listener(listener)
@@ -171,15 +170,14 @@ def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
         if not follow:
             return
 
-        circ = yield gen.next()
+        circ = await gen.next()
         print(circ)
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, all, execute, follow, arc_file, file):
+async def run(reactor, cfg, tor, all, execute, follow, arc_file, file):
 
-    state = yield tor.create_state()
+    state = await tor.create_state()
     if follow or execute:
-        yield continuously_update_xplanet(cfg, all, arc_file, file, follow, state)
+        await continuously_update_xplanet(cfg, all, arc_file, file, follow, state)
     else:
         dump_xplanet_files(cfg, all, arc_file, file, follow, state)
