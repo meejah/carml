@@ -76,6 +76,7 @@ def router_info(state, arg, tor):
             yield _print_router_info(relay, agent=tor.web_agent())
 
 
+@defer.inlineCallbacks
 def _when_updated(state):
     d = defer.Deferred()
 
@@ -85,9 +86,9 @@ def _when_updated(state):
         # TorState?
         print("Got NEWCONSENSUS at {}".format(datetime.datetime.now()))
         d.callback(None)
-        state.protocol.remove_event_listener('NEWCONSENSUS', _newconsensus)
-    state.protocol.add_event_listener('NEWCONSENSUS', _newconsensus)
-    return d
+        return state.protocol.remove_event_listener('NEWCONSENSUS', _newconsensus)
+    yield state.protocol.add_event_listener('NEWCONSENSUS', _newconsensus)
+    yield d
 
 
 @defer.inlineCallbacks
