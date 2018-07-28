@@ -280,7 +280,8 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
     else:
         agent = tor.web_agent()
 
-    uri = b'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
+    # see onion.torproject.org to verify this is "www.torproject.org" equiv
+    uri = b'http://expyuzz4wqqyqhjn.onion/projects/torbrowser/RecommendedTBBVersions'
     data = BytesIO()
     print(u'Getting recommended versions from "{}".'.format(uri.decode('ascii')))
 
@@ -353,7 +354,11 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
     # already exist locally).
     sig_fname, dist_fname = get_download_urls(plat, arch, target_version)
     for to_download in [sig_fname, dist_fname]:
-        uri = u'https://www.torproject.org/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
+        # this will 302 to the right spot, but goes to clearweb (dist.torproject.org) instead of onion service...
+        # uri = u'http://expyuzz4wqqyqhjn.onion/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
+
+        # see onion.torproject.org to verify this is "dist.torproject.org" equiv
+        uri = u'http://rqef5a5mebgq46y5.onion/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
         if os.path.exists(to_download):
             print(util.colors.red(to_download) + ': already exists, so not downloading.')
         else:
