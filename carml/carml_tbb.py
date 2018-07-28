@@ -357,17 +357,14 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
         if os.path.exists(to_download):
             print(util.colors.red(to_download) + ': already exists, so not downloading.')
         else:
-            def cleanup(failure, fname):
-                print('removing "%s"...' % fname)
-                os.unlink(fname)
-                return failure
-
-            f = open(to_download, 'wb')
-            print('Downloading "%s".' % to_download)
-            d = download(agent, uri, f)
-            d.addErrback(cleanup, to_download)
-            await d
-            f.close()
+            try:
+                with open(to_download, 'wb') as f:
+                    print('Downloading "%s" from:\n   %s' % (to_download, uri.decode('ascii')))
+                    await download(agent, uri, f)
+            except Exception as e:
+                print('removing "%s"...' % to_download)
+                os.unlink(to_download)
+                raise
 
     # ensure the signature matches
     if verify_signature(sig_fname, system_gpg=system_keychain):
