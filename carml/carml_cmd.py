@@ -59,9 +59,20 @@ class StdioLineReceiver(LineReceiver):
             self.all_done.callback(None)
 
 
+def ensure_bytes(x):
+    if isinstance(x, bytes):
+        return x
+    return x.encode('ascii')
+
+
 async def do_cmd(proto, args):
+    bytes_args = [
+        ensure_bytes(b)
+        for b in args
+    ]
     try:
-        res = await proto.queue_command(' '.join(args))
+        # command must be in bytes
+        res = await proto.queue_command(b' '.join(bytes_args))
         print(res)
     except Exception as e:
         print(util.colors.red(str(e)))
