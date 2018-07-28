@@ -621,7 +621,7 @@ def onion(ctx, port, onion_version):
     """
     if len(port) == 0:
         raise click.UsageError(
-            "Specify at least one port"
+            "You must use --port at least once"
         )
 
     def _range_check(p):

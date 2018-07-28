@@ -21,7 +21,7 @@ from txtorcon import TCPHiddenServiceEndpoint
 
 async def run(reactor, cfg, tor, ports, version):
 
-    print("Creating onion-service...")
+    print("Creating v{} onion-service...".format(version))
     def update(pct, tag, description):
         print("  {}: {}".format(util.pretty_progress(pct), description))
     hs = await tor.create_onion_service(ports, version=version, progress=update, await_all_uploads=True)
