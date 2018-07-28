@@ -328,9 +328,9 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
     else:
         versions = others
 
-    if alphas:
+    if alphas and not alpha:
         print(util.colors.yellow("Note: there are alpha versions available; use --alpha to download."))
-    if betas:
+    if betas and not beta:
         print(util.colors.yellow("Note: there are beta versions available; use --beta to download."))
     if hardened:
         print(util.colors.yellow("Note: there are hardened versions available but we don't support downloading them yet."))
