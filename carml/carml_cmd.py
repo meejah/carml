@@ -56,17 +56,12 @@ class StdioLineReceiver(LineReceiver):
             self.all_done.callback(None)
 
 
-def do_cmd(proto, args):
-    def _print(res):
+async def do_cmd(proto, args):
+    try:
+        res = await proto.queue_command(' '.join(args))
         print(res)
-
-    def _error(arg):
-        print(util.colors.red(arg.getErrorMessage()))
-        return None
-    d = proto.queue_command(' '.join(args))
-    d.addCallback(_print)
-    d.addErrback(_error)
-    return d
+    except Exception as e:
+        print(util.colors.red(str(e)))
 
 
 # see cmd_info for an alternate way to implement this via a method
