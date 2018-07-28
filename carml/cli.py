@@ -22,7 +22,7 @@ from . import carml_pastebin
 from . import carml_copybin
 from . import carml_relay
 from . import carml_tbb
-from . import carml_temphs
+from . import carml_onion
 from . import carml_tmux
 from . import carml_xplanet
 from . import carml_graph
@@ -482,7 +482,7 @@ def newid(ctx):
 @click.pass_context
 def pastebin(ctx, dry_run, once, file, count, keys):
     """
-    Put stdin (or a file) on a fresh hidden-service easily.
+    Put stdin (or a file) on a fresh onion-service easily.
     """
     if count is not None and count < 0:
         raise click.UsageError(
@@ -612,11 +612,11 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     default=3,
 )
 @click.pass_context
-def temphs(ctx, port, onion_version):
+def onion(ctx, port, onion_version):
     """
-    Add a temporary hidden-service to the Tor we connect to.
+    Add a temporary onion-service to the Tor we connect to.
 
-    This keeps a hidden-service running as long as this command is
+    This keeps an onion-service running as long as this command is
     running with an arbitrary list of forwarded ports.
     """
     if len(port) == 0:
@@ -654,7 +654,7 @@ def temphs(ctx, port, onion_version):
 
     cfg = ctx.obj
     return _run_command(
-        carml_temphs.run,
+        carml_onion.run,
         cfg,
         list(validated_ports),
         onion_version,
@@ -731,7 +731,7 @@ def xplanet(ctx, all, execute, follow, arc_file, file):
 @click.pass_context
 def copybin(ctx, service):
     """
-    Download something from a "pastebin" hidden-service.
+    Download something from a "pastebin" onion-service.
     """
     cfg = ctx.obj
     return _run_command(
