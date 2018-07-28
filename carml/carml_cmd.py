@@ -33,19 +33,22 @@ class StdioLineReceiver(LineReceiver):
         # Ignore blank lines
         if not line:
             return
-
         keys = line.split()
-        d = do_cmd(self.proto, tuple(keys))
-        d.addCallback(self._completed, d)
-        d.addErrback(self._error, d)
-        self.outstanding.append(d)
+        # we really do want this to be a Deferred because lineReceived
+        # isn't (can't be) an async method..
+        token = object()
+        self.outstanding.append(token)
+        d = defer.ensureDeferred(do_cmd(self.proto, tuple(keys)))
+        d.addCallback(self._completed, token)
+        d.addErrback(self._error, token)
 
-    def _error(self, arg, d):
+    def _error(self, arg, token):
         print(util.colors.red(str(arg)))
+        self.outstanding.remove(token)
         return
 
-    def _completed(self, arg, d):
-        self.outstanding.remove(d)
+    def _completed(self, arg, token):
+        self.outstanding.remove(token)
         if self._exit and len(self.outstanding) == 0:
             self.all_done.callback(None)
 
