@@ -199,6 +199,7 @@ def _run_command(cmd, cfg, *args, **kwargs):
         d.addErrback(_the_bad_stuff)
         d.addBoth(lambda _: reactor.stop())
 
+    # XXX can't we replace this with react() instead?
     reactor.callWhenRunning(_go)
     reactor.run()
     sys.exit(codes[0])

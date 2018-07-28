@@ -198,6 +198,7 @@ async def run(reactor, cfg, tor, verbose, no_guards, no_addr, no_circuits, no_st
 
         def error(fail):
             print(colors.red('Error:'), fail.getErrorMessage())
+        # use state.protocol.when_disconnected() after next txtorcon release
         state.protocol.on_disconnect.addErrback(error).addBoth(stop_reactor)
 
     else:
