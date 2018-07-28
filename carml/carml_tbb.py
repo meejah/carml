@@ -403,6 +403,7 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
 
     else:
         print(util.colors.bold('Deleting tarball; signature verification failed.'))
+        # XXX probably want an option to NOT do this ("for expert use" ...?)
         os.unlink(dist_fname)
         print('...however signature file is being kept for reference (%s).' % sig_fname)
 
