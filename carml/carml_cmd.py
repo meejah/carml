@@ -18,7 +18,9 @@ from carml import util
 
 
 class StdioLineReceiver(LineReceiver):
-    delimiter = '\n'
+    # note: for python3, if this isn't bytes, nothing works but
+    # Twisted doesn't tell you that ( or eats the error?)
+    delimiter = b'\n'
 
     def __init__(self, all_done, proto):
         self.proto = proto
