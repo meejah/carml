@@ -137,3 +137,4 @@ License
    commands
    development
    howtos
+   releases
