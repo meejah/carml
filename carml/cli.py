@@ -627,6 +627,10 @@ def onion(ctx, port, onion_version):
     def _range_check(p):
         try:
             p = int(p)
+            if p < 1 or p > 65535:
+                raise click.UsageError(
+                    "{} invalid port".format(p)
+                )
         except ValueError:
             raise click.UsageError(
                 "{} is not an int".format(p)
@@ -635,10 +639,11 @@ def onion(ctx, port, onion_version):
     validated_ports = []
     for p in port:
         if ':' in p:
-            remote, local = p.split(':')
+            remote, local = p.split(':', 1)
             _range_check(remote)
-            _range_check(local)
-            validated_ports.append((int(remote), int(local)))
+            # the local port can be an ip:port pair, or a unix:/
+            # socket so we'll let txtorcon take care
+            validated_ports.append((int(remote), local))
         else:
             _range_check(p)
             validated_ports.append(int(p))
