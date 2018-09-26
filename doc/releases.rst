@@ -4,8 +4,8 @@ Releases
 master
 ------
 
- . Python3-only
- . `carml onion` command to add Onion services to a Tor instance
+ . `carml` is now Python3-only
+ . add `carml onion` command to add Onion services to a Tor instance
 
 
 18.1.0
