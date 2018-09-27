@@ -19,9 +19,8 @@ from carml.util import colors
 import click
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, list_events, once, show_event, count, events):
-    all_events = yield tor.protocol.get_info('events/names')
+async def run(reactor, cfg, tor, list_events, once, show_event, count, events):
+    all_events = await tor.protocol.get_info('events/names')
     all_events = all_events['events/names']
     if list_events:
         for e in all_events.split():
@@ -60,4 +59,4 @@ def run(reactor, cfg, tor, list_events, once, show_event, count, events):
         tor.protocol.add_event_listener(e, listener)
 
     # might be forever if there's no count
-    yield all_done
+    await all_done

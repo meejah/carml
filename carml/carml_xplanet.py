@@ -22,21 +22,18 @@ def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
     unique_routers = set()
     routers_in_streams = set()
     if all:
-        map(unique_routers.add, state.routers.values())
+        unique_routers = set(state.routers.values())
 
     else:
         # this method does only active routers (i.e. in at least
         # one of your streams) and colours guards as green
         for circ in state.circuits.values():
-            map(unique_routers.add, circ.path)
-        map(unique_routers.add, state.entry_guards.values())
+            unique_routers = unique_routers.union(set(circ.path))
+        unique_routers = unique_routers.union(set(state.entry_guards.values()))
 
         # cache any router that's used by any current circuit right now
         for circ in state.circuits.values():
-            map(routers_in_streams.add, circ.path)
-
-        if False:
-            map(unique_routers.add, state.guards.values())
+            routers_in_streams = routers_in_streams.union(set(circ.path))
 
     header = '## Auto-generated "{}" by carml'.format(time.asctime())
     if arc_file is not None:
@@ -141,8 +138,7 @@ def generate_circuit_builds(listener):
     return generator()
 
 
-@defer.inlineCallbacks
-def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
+async def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
     listener = CircuitListener()
     gen = generate_circuit_builds(listener)
     state.add_circuit_listener(listener)
@@ -174,15 +170,14 @@ def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
         if not follow:
             return
 
-        circ = yield gen.next()
+        circ = await gen.next()
         print(circ)
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, all, execute, follow, arc_file, file):
+async def run(reactor, cfg, tor, all, execute, follow, arc_file, file):
 
-    state = yield tor.create_state()
+    state = await tor.create_state()
     if follow or execute:
-        yield continuously_update_xplanet(cfg, all, arc_file, file, follow, state)
+        await continuously_update_xplanet(cfg, all, arc_file, file, follow, state)
     else:
         dump_xplanet_files(cfg, all, arc_file, file, follow, state)

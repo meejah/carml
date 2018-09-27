@@ -81,20 +81,38 @@ Some Quick Examples
     Descriptor uploaded; hidden-service should be reachable.
     Mon Jul 21 13:54:38 2014: Serving request to User-Agent "curl/7.37.0".
     Shutting down.
-    (venv)meejah@machine:~$ carml downloadbundle --extract
-    Getting recommended versions from "https://check.torproject.org/RecommendedTBBVersions".
-       3.6.3-Linux, 3.6.3-MacOS, 3.6.3-Windows
-    tor-browser-linux64-3.6.3_en-US.tar.xz.asc: already exists, so not downloading.
-    tor-browser-linux64-3.6.3_en-US.tar.xz: already exists, so not downloading.
-    gpg: Signature made Fri 25 Jul 2014 11:20:02 AM MDT using RSA key ID 63FEE659
-    gpg: Good signature from "Erinn Clark <erinn@torproject.org>"
-    gpg:                 aka "Erinn Clark <erinn@debian.org>"
-    gpg:                 aka "Erinn Clark <erinn@double-helix.org>"
+    (venv3)meejah@machine:~$ carml tbb
+    Getting recommended versions from "http://expyuzz4wqqyqhjn.onion/projects/torbrowser/RecommendedTBBVersions".
+       7.5.5, 7.5.5-MacOS, 7.5.5-Linux, 7.5.5-Windows, 7.5.6, 7.5.6-MacOS,
+       7.5.6-Linux, 7.5.6-Windows, 8.0a8, 8.0a8-MacOS, 8.0a8-Linux,
+       8.0a8-Windows, 8.0a9, 8.0a9-MacOS, 8.0a9-Linux, 8.0a9-Windows
+    Note: there are alpha versions available; use --alpha to download.
+    Downloading "tor-browser-linux64-7.5.5_en-US.tar.xz.asc" from:
+       http://rqef5a5mebgq46y5.onion/torbrowser/7.5.5/tor-browser-linux64-7.5.5_en-US.tar.xz.asc
+    Downloading "tor-browser-linux64-7.5.5_en-US.tar.xz" from:
+       http://rqef5a5mebgq46y5.onion/torbrowser/7.5.5/tor-browser-linux64-7.5.5_en-US.tar.xz
+    [▏    ] - 0.0 of 65.8 MiB (1s remaining)
+    [▋    ] - 6.6 of 65.8 MiB (153s remaining)
+    [█▏   ] - 13.2 of 65.8 MiB (137s remaining)
+    [█▋   ] - 19.8 of 65.8 MiB (120s remaining)
+    [██▏  ] - 26.4 of 65.8 MiB (102s remaining)
+    [██▋  ] - 32.9 of 65.8 MiB (85s remaining)
+    [███▏ ] - 39.5 of 65.8 MiB (70s remaining)
+    [███▋ ] - 46.1 of 65.8 MiB (55s remaining)
+    [████▏] - 52.7 of 65.8 MiB (38s remaining)
+    [████▋] - 59.3 of 65.8 MiB (19s remaining)
+    [█████] - 65.8 of 65.8 MiB (0s remaining)
+    0.32 MiB/s
+    gpg: assuming signed data in 'tor-browser-linux64-7.5.5_en-US.tar.xz'
+    gpg: Signature made Sat 09 Jun 2018 06:42:37 AM MDT
+    gpg:                using RSA key D1483FA6C3C07136
+    gpg: Good signature from "Tor Browser Developers (signing key) <torbrowser@torproject.org>" [unknown]
     gpg: WARNING: This key is not certified with a trusted signature!
     gpg:          There is no indication that the signature belongs to the owner.
-    Primary key fingerprint: 8738 A680 B84B 3031 A630  F2DB 416F 0610 63FE E659
+    Primary key fingerprint: EF6E 286D DA85 EA2A 4BA7  DE68 4E2C 6E87 9329 8290
+         Subkey fingerprint: A430 0A6B C93C 0877 A445  1486 D148 3FA6 C3C0 7136
     Signature is good.
-    Extracting "tor-browser-linux64-3.6.3_en-US.tar.xz"...
+    Extracting "tor-browser-linux64-7.5.5_en-US.tar.xz"...
       decompressing...
        20% extracted
        40% extracted
@@ -102,8 +120,8 @@ Some Quick Examples
        80% extracted
       100% extracted
     Tor Browser Bundle downloaded and extracted.
-    To run:
-       ./tor-browser_en-US/start-tor-browser
+    running: ./tor-browser_en-US/Browser/start-tor-browser
+
 
 
 License
@@ -119,3 +137,4 @@ License
    commands
    development
    howtos
+   releases

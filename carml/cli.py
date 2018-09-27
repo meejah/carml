@@ -22,7 +22,7 @@ from . import carml_pastebin
 from . import carml_copybin
 from . import carml_relay
 from . import carml_tbb
-from . import carml_temphs
+from . import carml_onion
 from . import carml_tmux
 from . import carml_xplanet
 from . import carml_graph
@@ -136,10 +136,9 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
 
 def _run_command(cmd, cfg, *args, **kwargs):
 
-    @defer.inlineCallbacks
-    def _startup(reactor):
+    async def _startup(reactor):
         ep = clientFromString(reactor, cfg.connect)
-        tor = yield txtorcon.connect(reactor, ep)
+        tor = await txtorcon.connect(reactor, ep)
 
         if cfg.debug_protocol:
 
@@ -178,14 +177,12 @@ def _run_command(cmd, cfg, *args, **kwargs):
 
 
         if cfg.info:
-            info = yield tor.protocol.get_info('version', 'status/version/current', 'dormant')
+            info = await tor.protocol.get_info('version', 'status/version/current', 'dormant')
             click.echo(
                 'Connected to a Tor version "{version}" (status: '
                 '{status/version/current}).\n'.format(**info)
             )
-        yield defer.maybeDeferred(
-            cmd, reactor, cfg, tor, *args, **kwargs
-        )
+        await cmd(reactor, cfg, tor, *args, **kwargs)
 
     from twisted.internet import reactor
     codes = [0]
@@ -198,10 +195,11 @@ def _run_command(cmd, cfg, *args, **kwargs):
         return None
 
     def _go():
-        d = _startup(reactor)
+        d = defer.ensureDeferred(_startup(reactor))
         d.addErrback(_the_bad_stuff)
         d.addBoth(lambda _: reactor.stop())
 
+    # XXX can't we replace this with react() instead?
     reactor.callWhenRunning(_go)
     reactor.run()
     sys.exit(codes[0])
@@ -484,7 +482,7 @@ def newid(ctx):
 @click.pass_context
 def pastebin(ctx, dry_run, once, file, count, keys):
     """
-    Put stdin (or a file) on a fresh hidden-service easily.
+    Put stdin (or a file) on a fresh onion-service easily.
     """
     if count is not None and count < 0:
         raise click.UsageError(
@@ -614,21 +612,25 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     default=3,
 )
 @click.pass_context
-def temphs(ctx, port, onion_version):
+def onion(ctx, port, onion_version):
     """
-    Add a temporary hidden-service to the Tor we connect to.
+    Add a temporary onion-service to the Tor we connect to.
 
-    This keeps a hidden-service running as long as this command is
+    This keeps an onion-service running as long as this command is
     running with an arbitrary list of forwarded ports.
     """
     if len(port) == 0:
         raise click.UsageError(
-            "Specify at least one port"
+            "You must use --port at least once"
         )
 
     def _range_check(p):
         try:
             p = int(p)
+            if p < 1 or p > 65535:
+                raise click.UsageError(
+                    "{} invalid port".format(p)
+                )
         except ValueError:
             raise click.UsageError(
                 "{} is not an int".format(p)
@@ -637,10 +639,11 @@ def temphs(ctx, port, onion_version):
     validated_ports = []
     for p in port:
         if ':' in p:
-            remote, local = p.split(':')
+            remote, local = p.split(':', 1)
             _range_check(remote)
-            _range_check(local)
-            validated_ports.append((int(remote), int(local)))
+            # the local port can be an ip:port pair, or a unix:/
+            # socket so we'll let txtorcon take care
+            validated_ports.append((int(remote), local))
         else:
             _range_check(p)
             validated_ports.append(int(p))
@@ -656,7 +659,7 @@ def temphs(ctx, port, onion_version):
 
     cfg = ctx.obj
     return _run_command(
-        carml_temphs.run,
+        carml_onion.run,
         cfg,
         list(validated_ports),
         onion_version,
@@ -733,7 +736,7 @@ def xplanet(ctx, all, execute, follow, arc_file, file):
 @click.pass_context
 def copybin(ctx, service):
     """
-    Download something from a "pastebin" hidden-service.
+    Download something from a "pastebin" onion-service.
     """
     cfg = ctx.obj
     return _run_command(

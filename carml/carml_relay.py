@@ -16,10 +16,8 @@ from txtorcon.router import hashFromHexId
 from carml import util
 
 
-@defer.inlineCallbacks
-def _print_router_info(router, agent=None):
-    # loc = yield router.get_location()
-    loc = yield router.location
+async def _print_router_info(router, agent=None):
+    loc = await router.get_location()
     print(u"            name: {}".format(router.name))
     print(u"          hex id: {}".format(router.id_hex))
     print(u"id hash (base64): {}".format(hashFromHexId(router.id_hex)))
@@ -30,7 +28,7 @@ def _print_router_info(router, agent=None):
     print(u"  last published: {} ago ({})".format(humanize.naturaldelta(diff), router.modified))
     if agent:
         print(util.colors.italic("Extended information from" + util.colors.green(" onionoo.torproject.org") + ":"))
-        details = yield router.get_onionoo_details(agent)
+        details = await router.get_onionoo_details(agent)
         details.setdefault('dir_address', '<none>')
         details.setdefault('city_name', 'unknown')
         details.setdefault('region_name', 'unknown')
@@ -52,8 +50,7 @@ def _print_router_info(router, agent=None):
         )
 
 
-@defer.inlineCallbacks
-def router_info(state, arg, tor):
+async def router_info(state, arg, tor):
     for fp in arg:
         if len(fp) == 40 and not fp.startswith('$'):
             fp = '${}'.format(fp)
@@ -70,14 +67,13 @@ def router_info(state, arg, tor):
             if len(candidates) > 1:
                 print("Found multiple routers:")
             for router in candidates:
-                yield _print_router_info(router)
+                await _print_router_info(router)
                 print()
         else:
-            yield _print_router_info(relay, agent=tor.web_agent())
+            await _print_router_info(relay, agent=tor.web_agent())
 
 
-@defer.inlineCallbacks
-def _when_updated(state):
+async def _when_updated(state):
     d = defer.Deferred()
 
     def _newconsensus(doc):
@@ -87,26 +83,23 @@ def _when_updated(state):
         print("Got NEWCONSENSUS at {}".format(datetime.datetime.now()))
         d.callback(None)
         return state.protocol.remove_event_listener('NEWCONSENSUS', _newconsensus)
-    yield state.protocol.add_event_listener('NEWCONSENSUS', _newconsensus)
-    yield d
+    await state.protocol.add_event_listener('NEWCONSENSUS', _newconsensus)
+    await d
 
 
-@defer.inlineCallbacks
-def _await_router(state, router_id):
+async def _await_router(state, router_id):
     print("Waiting for relay {}".format(router_id))
     while True:
-        yield _when_updated(state)
+        await _when_updated(state)
         print("received update")
         try:
-            defer.returnValue(state.routers[router_id])
-            return
+            return state.routers[router_id]
         except KeyError:
             print("{} not found; waiting".format(router_id))
             continue
 
 
-@defer.inlineCallbacks
-def router_await(state, arg):
+async def router_await(state, arg):
     if len(arg) == 40 and not arg.startswith('$'):
         arg = '${}'.format(arg)
     if not arg.startswith('$') and len(arg) == 41:
@@ -117,21 +110,20 @@ def router_await(state, arg):
         print("Router already present:")
         r = state.routers[arg]
     else:
-        r = yield _await_router(state, arg)
-    yield _print_router_info(r)
+        r = await _await_router(state, arg)
+    await _print_router_info(r)
 
 
-def router_list(state):
+async def router_list(state):
     for router in state.all_routers:
         print("{}".format(router.id_hex[1:]))
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, list, info, await):
-    state = yield tor.create_state()
+async def run(reactor, cfg, tor, list, info, wait):
+    state = await tor.create_state()
     if info:
-        yield router_info(state, info, tor)
+        await router_info(state, info, tor)
     elif list:
-        yield router_list(state)
-    elif await:
-        yield router_await(state, await)
+        await router_list(state)
+    elif wait:
+        await router_await(state, wait)

@@ -147,7 +147,11 @@ class VerifyCertChainContextFactory(ssl.ClientContextFactory):
             for (k, v) in cert.get_subject().get_components():
                 if k == 'CN':
                     cn = v
-            common_name = ''.join(map(lambda x: str(x[1]), filter(lambda x: x[0] == 'CN', cert.get_subject().get_components())))
+            common_name = ''.join(
+                str(x[1])
+                for x in cert.get_subject().get_components()
+                if x[0] == 'CN'
+            )
             print('Certificate chain verification failed for "%s".' % common_name)
             print('Public key md5 hash is "%s" but wanted "%s".' % (verify_pubkey.keyHash(), golden_pubkey.keyHash()))
             print('Dumping failing certificate to "failed.pem".')
@@ -195,17 +199,15 @@ class ResponseReceiver(Protocol):
                     print('%0.2f MiB/s' % (self.total / (1024.0 * 1024) / elapsed))
 
     def connectionLost(self, reason):
-        print("boom {}".format(reason))
         self.all_done.callback(str(reason))
 
 
-@defer.inlineCallbacks
-def download(agent, uri, filelike):
-    resp = yield agent.request(b'GET', uri)
+async def download(agent, uri, filelike):
+    resp = await agent.request(b'GET', uri)
     while resp.code == 302:
         newloc = resp.headers.getRawHeaders('location')[0]
         print("Following 302:", newloc)
-        resp = yield agent.request(b'GET', newloc.encode('ascii'))
+        resp = await agent.request(b'GET', newloc.encode('ascii'))
 
     if resp.code != 200:
         raise RuntimeError('Failed to download "{}": {}'.format(uri, resp.code))
@@ -213,7 +215,7 @@ def download(agent, uri, filelike):
     total = resp.length
     dl = ResponseReceiver(filelike, total, done)
     resp.deliverBody(dl)
-    yield done
+    await done
 
 
 def get_download_urls(plat, arch, target_version):
@@ -262,8 +264,7 @@ def extract_7zip(fname):
     return None
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
+async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     # NOTE the middle cert changed on April 10 or thereabouts;
     # still need to confirm this is legitimate?
     chain = [ssl.Certificate.loadPEM(pkg_resources.resource_string('carml', 'keys/torproject.pem')),
@@ -279,18 +280,18 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     else:
         agent = tor.web_agent()
 
-    uri = b'https://www.torproject.org/projects/torbrowser/RecommendedTBBVersions'
+    # see onion.torproject.org to verify this is "www.torproject.org" equiv
+    uri = b'http://expyuzz4wqqyqhjn.onion/projects/torbrowser/RecommendedTBBVersions'
     data = BytesIO()
     print(u'Getting recommended versions from "{}".'.format(uri.decode('ascii')))
-    d = download(agent, uri, data)
 
-    def ssl_errors(fail):
-        if hasattr(fail.value, 'reasons'):
+    try:
+        await download(agent, uri, data)
+    except Exception as e:
+        if hasattr(value, 'reasons'):
             msg = ''.join([str(r.value.args[-1]) for r in fail.value.reasons])
             raise RuntimeError(msg)
-        return fail
-    d.addErrback(ssl_errors)
-    yield d
+        raise
 
     # valid platforms from check.torproject.org can be one of:
     # 'Linux', 'MacOS' or 'Windows'
@@ -316,11 +317,9 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     hardened_re = re.compile(r'(.*)-hardened-(.*)')
 
     print(util.wrap(', '.join(versions), 60, '  '))
-    alphas = filter(lambda x: alpha_re.match(x), versions)
-    betas = filter(lambda x: beta_re.match(x), versions)
-    # the 'hardened' browser names don't follow the pattern of the
-    # others; for now, just ignoring them... (XXX FIXME)
-    hardened = filter(lambda x: hardened_re.match(x), versions)
+    alphas = [x for x in versions if alpha_re.match(x)]
+    betas = [x for x in versions if beta_re.match(x)]
+    hardened = [x for x in versions if  hardened_re.match(x)]
     others = set(versions).difference(alphas, betas, hardened)
     if alpha:
         versions = alphas
@@ -329,9 +328,9 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     else:
         versions = others
 
-    if alphas:
+    if alphas and not alpha:
         print(util.colors.yellow("Note: there are alpha versions available; use --alpha to download."))
-    if betas:
+    if betas and not beta:
         print(util.colors.yellow("Note: there are beta versions available; use --beta to download."))
     if hardened:
         print(util.colors.yellow("Note: there are hardened versions available but we don't support downloading them yet."))
@@ -355,21 +354,22 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
     # already exist locally).
     sig_fname, dist_fname = get_download_urls(plat, arch, target_version)
     for to_download in [sig_fname, dist_fname]:
-        uri = u'https://www.torproject.org/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
+        # this will 302 to the right spot, but goes to clearweb (dist.torproject.org) instead of onion service...
+        # uri = u'http://expyuzz4wqqyqhjn.onion/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
+
+        # see onion.torproject.org to verify this is "dist.torproject.org" equiv
+        uri = u'http://rqef5a5mebgq46y5.onion/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
         if os.path.exists(to_download):
             print(util.colors.red(to_download) + ': already exists, so not downloading.')
         else:
-            def cleanup(failure, fname):
-                print('removing "%s"...' % fname)
-                os.unlink(fname)
-                return failure
-
-            f = open(to_download, 'wb')
-            print('Downloading "%s".' % to_download)
-            d = download(agent, uri, f)
-            d.addErrback(cleanup, to_download)
-            yield d
-            f.close()
+            try:
+                with open(to_download, 'wb') as f:
+                    print('Downloading "%s" from:\n   %s' % (to_download, uri.decode('ascii')))
+                    await download(agent, uri, f)
+            except Exception as e:
+                print('removing "%s"...' % to_download)
+                os.unlink(to_download)
+                raise
 
     # ensure the signature matches
     if verify_signature(sig_fname, system_gpg=system_keychain):
@@ -403,6 +403,7 @@ def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_extrac
 
     else:
         print(util.colors.bold('Deleting tarball; signature verification failed.'))
+        # XXX probably want an option to NOT do this ("for expert use" ...?)
         os.unlink(dist_fname)
         print('...however signature file is being kept for reference (%s).' % sig_fname)
 

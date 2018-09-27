@@ -18,10 +18,9 @@ import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor, service):
-    config = yield tor.get_config()
-    socks = yield tor.protocol.get_info('net/listeners/socks')
+async def run(reactor, cfg, tor, service):
+    config = await tor.get_config()
+    socks = await tor.protocol.get_info('net/listeners/socks')
     socks = socks['net/listeners/socks']
     socks_host, socks_port = socks.split(':')
 
@@ -32,10 +31,10 @@ def run(reactor, cfg, tor, service):
     auth = '%s %s' % (onion, cookie)
     if auth not in config.HidServAuth:
         config.HidServAuth.append(auth)
-    yield config.save()
+    await config.save()
 
     agent = tor.web_agent()
-    res = yield agent.request('GET', 'http://{}/'.format(onion))
+    res = await agent.request('GET', 'http://{}/'.format(onion))
     print('Response: "{} {}" with {} bytes'.format(res.code, res.phrase, res.length))
-    data = yield readBody(res)
+    data = await readBody(res)
     print(data)

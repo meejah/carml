@@ -20,8 +20,7 @@ def newid_no_signal(reactor, left, all_done):
         all_done.errback(RuntimeError('no acknowledgement in 10 seconds.'))
 
 
-@defer.inlineCallbacks
-def run(reactor, cfg, tor):
+async def run(reactor, cfg, tor):
     all_done = defer.Deferred()
 
     # Tor emits this event whenever it processes a SIGNAL command.
@@ -29,9 +28,9 @@ def run(reactor, cfg, tor):
 
     print("Requesting new identity",)
     sys.stdout.flush()
-    yield tor.protocol.signal('NEWNYM')
+    await tor.protocol.signal('NEWNYM')
     # answer will be "OK" since Tor received the signal
     # if rate-limiting is happening, the "SIGNAL NEWNYM" event
     # will not be received. so we wait for it
     reactor.callLater(1, newid_no_signal, reactor, 10, all_done)
-    yield all_done
+    await all_done

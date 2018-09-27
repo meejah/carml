@@ -11,7 +11,7 @@ import humanize
 
 import txtorcon
 
-from twisted.internet.defer import inlineCallbacks, Deferred
+from twisted.internet.defer import Deferred
 
 from carml.util import dump_circuits, format_net_location, nice_router_name, colors, wrap
 
@@ -36,7 +36,7 @@ class BandwidthTracker(object):
         return len(self._state.streams)
 
     def on_bandwidth(self, s):
-        r, w = map(int, s.split())
+        r, w = (int(x) for x in s.split())
         self._bandwidth.append((r, w))
         try:
             self.draw_bars()
@@ -63,11 +63,11 @@ class BandwidthTracker(object):
         for stream in self._state.streams.values():
             # ...there's a window during which it may not be attached yet
             if stream.circuit:
-                circpath = '>'.join(map(lambda r: r.location.countrycode, stream.circuit.path))
+                circpath = '>'.join(r.location.countrycode for r in stream.circuit.path)
                 streams += ' ' + circpath
         if len(streams) > 24:
             streams = streams[:21] + '...'
-        print(left_bar(up, 20) + unichr(0x21f5) + right_bar(dn, 20) + status + streams)
+        print(left_bar(up, 20) + chr(0x21f5) + right_bar(dn, 20) + status + streams)
 
 
 def left_bar(percent, width):
@@ -80,7 +80,7 @@ def left_bar(percent, width):
     remain = (percent * width) - blocks
 
     part = int(remain * 8)
-    rpart = unichr(0x258f - 7 + part)  # for smooth bar
+    rpart = chr(0x258f - 7 + part)  # for smooth bar
 
     return (' ' * (width - blocks)) + colors.negative(colors.green(rpart)) + colors.green(('+' * (blocks)), bg='green')
 
@@ -93,19 +93,18 @@ def right_bar(percent, width):
     remain = (percent * width) - blocks
 
     part = int(remain * 8)
-    rpart = unichr(0x258f - part)  # for smooth bar
+    rpart = chr(0x258f - part)  # for smooth bar
     if part == 0:
         rpart = ' '
 
     return colors.red('+' * (blocks), bg='red') + (colors.red(rpart)) + (' ' * (width - blocks))
 
 
-@inlineCallbacks
-def run(reactor, cfg, tor, max):
-    state = yield tor.create_state()
+async def run(reactor, cfg, tor, max):
+    state = await tor.create_state()
     bwtracker = BandwidthTracker(max, state)
-    yield tor.protocol.add_event_listener('BW', bwtracker.on_bandwidth)
-    yield tor.protocol.add_event_listener('STREAM_BW', bwtracker.on_stream_bandwidth)
+    await tor.protocol.add_event_listener('BW', bwtracker.on_bandwidth)
+    await tor.protocol.add_event_listener('STREAM_BW', bwtracker.on_stream_bandwidth)
 
     # infinite loop
-    yield Deferred()
+    await Deferred()
