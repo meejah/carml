@@ -16,8 +16,8 @@ Examples
 --------
 
 Forward both "80" and "9418" on a version 3 service. This will forward
-an incoming request on port 80 to 127.0.0.1:80 and is the simplest way
-to set up a service::
+an incoming request on port 80 to 127.0.0.1:80 (and 9418 to
+127.0.0.1:9418) and is the simplest way to set up a service::
 
     carml onion --port 80 --port 9418
 
