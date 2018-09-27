@@ -69,6 +69,7 @@ options listed above). You can get any help on a command with the
 .. toctree::
    :maxdepth: 1
 
+   command-onion
    command-pastebin
    command-copybin
    command-downloadbundle
