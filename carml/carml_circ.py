@@ -151,7 +151,7 @@ async def run(reactor, cfg, tor, if_unused, verbose, list, build, delete):
         deletes = []
         for d in delete:
             deletes.append(delete_circuit(reactor, cfg, tor, d, if_unused))
-        results = await defer.DeferredList(deletes)
+        results = await defer.DeferredList([defer.ensureDeferred(d) for d in deletes])
         for ok, value in results:
             if not ok:
                 raise value
