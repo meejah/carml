@@ -58,6 +58,9 @@ async def router_info(state, arg, tor):
         try:
             relay = state.routers[fp]
         except KeyError:
+            relay = None
+
+        if relay is None:
             candidates = [
                 r for r in state.all_routers
                 if fp in r.name or fp in r.id_hex
