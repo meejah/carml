@@ -34,14 +34,15 @@ async def _print_router_info(router, agent=None):
         details.setdefault('region_name', 'unknown')
         details.setdefault('country_name', 'unknown')
         details['or_addresses'] = ', '.join(details.get('or_addresses', []))
+        details['verified_host_names_formatted'] = ', '.join(details['verified_host_names'])
         print(
             u"        platform: {platform}\n"
             u"        runnning: {running}\n"
             u"     dir_address: {dir_address}\n"
             u"    OR addresses: {or_addresses}\n"
             u"        location: {city_name}, {region_name}, {country_name}\n"
-            u"       host name: {host_name}\n"
-            u"              AS: {as_number} ({as_name})\n"
+            u"      host names: {verified_host_names_formatted}\n"
+            u"              AS: {as} ({as_name})\n"
             u"  last restarted: {last_restarted}\n"
             u"    last changed: {last_changed_address_or_port}\n"
             u"       last seen: {last_seen}\n"
