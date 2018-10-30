@@ -18,7 +18,6 @@ _log = functools.partial(log.msg, system='carml')
 
 
 def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
-    print("dumping", arc_file, file)
     unique_routers = set()
     routers_in_streams = set()
     if all:
@@ -61,13 +60,13 @@ def dump_xplanet_files(cfg, all, arc_file, file, follow, state):
         start_color = gen_start_colors()
         for circ in state.circuits.values():
             arc_file.write('## circuit {}\n'.format(circ.id))
-            arc_colors = gen_colors(*start_color.next())
+            arc_colors = gen_colors(*next(start_color))
             for (i, link) in enumerate(circ.path[:-1]):
                 nxt = circ.path[i + 1]
                 if link.location.latlng[0] and nxt.location.latlng[0]:
                     arc_file.write('{} {} '.format(*link.location.latlng))
                     arc_file.write('{} {} '.format(*nxt.location.latlng))
-                    arc_file.write('color={} thickness=2 # {}->{}\n'.format(arc_colors.next(), link.id_hex, nxt.id_hex))
+                    arc_file.write('color={} thickness=2 # {}->{}\n'.format(next(arc_colors), link.id_hex, nxt.id_hex))
 
     markerfile = file
     markerfile.write(header + '\n')
@@ -154,23 +153,25 @@ async def continuously_update_xplanet(cfg, all, arc_file, file, follow, state):
     with open(cfg_fname, 'w') as f:
         f.write('''[earth]\n"Earth"\nmarker_file=%s\narc_file=%s\n''' % (marker_fname, arcs_fname))
 
-    cmd = ['xplanet',
-           '-num_times', '1',
-           '-projection', 'rectangular',
-           '-config', cfg_fname,
-           ]
+    cmd = [
+        'xplanet',
+        '-num_times', '1',
+        '-projection', 'rectangular',
+        '-config', cfg_fname,
+    ]
     os.chdir(tmpdir)
     while True:
         file = open(marker_fname, 'w')
         arc_file = open(arcs_fname, 'w')
         dump_xplanet_files(cfg, all, arc_file, file, follow, state)
+        output = subprocess.check_output(cmd)
         if not cfg.quiet:
-            print(' '.join(cmd), subprocess.check_output(cmd))
+            print(' '.join(cmd), output)
 
         if not follow:
             return
 
-        circ = await gen.next()
+        circ = await next(gen)
         print(circ)
 
 
