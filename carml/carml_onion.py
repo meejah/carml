@@ -21,11 +21,21 @@ from txtorcon import TCPHiddenServiceEndpoint
 
 async def run(reactor, cfg, tor, ports, version):
 
+    def fix_port(p):
+        """
+        if the user only specified one port, we should forward to the same
+        local one (otherwise txtorcon will pick one for us)
+        """
+        if isinstance(p, tuple):
+            return p
+        return p, p
+    ports = [fix_port(port) for port in ports]
+
     print("Creating v{} onion-service...".format(version))
+
     def update(pct, tag, description):
         print("  {}: {}".format(util.pretty_progress(pct), description))
     hs = await tor.create_onion_service(ports, version=version, progress=update, await_all_uploads=True)
-    # print("At least one HSDir successful")
     print("published to all HSDirs")
 
     async def remove():
