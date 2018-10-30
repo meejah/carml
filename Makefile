@@ -1,5 +1,5 @@
 .PHONY: doc certs tag
-VERSION = 18.2.0
+VERSION = 18.3.0
 
 venv:
 	virtualenv venv
