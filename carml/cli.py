@@ -617,8 +617,19 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     help='Which onion-service version to use (2 or 3)',
     default=3,
 )
+@click.option(
+    '--private-key',
+    help='Specify a private key',
+    default=None,
+)
+@click.option(
+    '--show-private-key', '-P',
+    help='Display the private key once the service is set up',
+    default=None,
+    is_flag=True,
+)
 @click.pass_context
-def onion(ctx, port, onion_version):
+def onion(ctx, port, onion_version, private_key, show_private_key):
     """
     Add a temporary onion-service to the Tor we connect to.
 
@@ -629,6 +640,17 @@ def onion(ctx, port, onion_version):
         raise click.UsageError(
             "You must use --port at least once"
         )
+
+    if private_key is not None:
+        if onion_version == 3 and not private_key.startswith('ED25519-V3'):
+            raise click.UsageError(
+                "Private key type is not version 3"
+            )
+        if onion_version == 2 and not private_key.startswith('RSA1024'):
+            raise click.UsageError(
+                "Private key type is not version 2"
+            )
+
 
     def _range_check(p):
         try:
@@ -669,6 +691,8 @@ def onion(ctx, port, onion_version):
         cfg,
         list(validated_ports),
         onion_version,
+        private_key,
+        show_private_key,
     )
 
 

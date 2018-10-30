@@ -19,7 +19,7 @@ import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
 
-async def run(reactor, cfg, tor, ports, version):
+async def run(reactor, cfg, tor, ports, version, private_key, show_private_key):
 
     def fix_port(p):
         """
@@ -31,11 +31,20 @@ async def run(reactor, cfg, tor, ports, version):
         return p, p
     ports = [fix_port(port) for port in ports]
 
-    print("Creating v{} onion-service...".format(version))
+    if private_key:
+        print("Re-creating v{} onion-service with given private key...".format(version))
+    else:
+        print("Creating v{} onion-service...".format(version))
 
     def update(pct, tag, description):
         print("  {}: {}".format(util.pretty_progress(pct), description))
-    hs = await tor.create_onion_service(ports, version=version, progress=update, await_all_uploads=True)
+    hs = await tor.create_onion_service(
+        ports,
+        version=version,
+        progress=update,
+        await_all_uploads=True,
+        private_key=private_key,
+    )
     print("published to all HSDirs")
 
     async def remove():
@@ -55,6 +64,14 @@ async def run(reactor, cfg, tor, ports, version):
                 hs.hostname,
                 remote_port,
                 local_port,
+            )
+        )
+
+    if show_private_key:
+        print(
+            "To re-launch this service, specify:\n"
+            "  --private-key {}".format(
+                hs.private_key,
             )
         )
 
