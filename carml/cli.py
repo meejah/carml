@@ -137,7 +137,13 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
 def _run_command(cmd, cfg, *args, **kwargs):
 
     async def _startup(reactor):
-        ep = clientFromString(reactor, cfg.connect)
+        if cfg.connect.startswith('tcp:'):
+            ep = clientFromString(reactor, cfg.connect)
+        else:
+            if ':' in cfg.connect:
+                ep = clientFromString(reactor, 'tcp:{}'.format(cfg.connect))
+            else:
+                ep = clientFromString(reactor, 'tcp:localhost:{}'.format(cfg.connect))
         tor = await txtorcon.connect(reactor, ep)
 
         if cfg.debug_protocol:
@@ -464,7 +470,7 @@ def newid(ctx):
 @click.option(
     '--file', '-f',
     default=sys.stdin,
-    type=click.File('rb'),
+    type=click.File('r'),
     help='Filename to use as input (instead of stdin)',
 )
 @click.option(

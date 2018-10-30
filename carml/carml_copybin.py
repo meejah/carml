@@ -34,7 +34,9 @@ async def run(reactor, cfg, tor, service):
     await config.save()
 
     agent = tor.web_agent()
-    res = await agent.request('GET', 'http://{}/'.format(onion))
+    url = 'http://{}'.format(onion).encode('ascii')
+    print("retrieving: {}".format(url))
+    res = await agent.request(b'GET', url)
     print('Response: "{} {}" with {} bytes'.format(res.code, res.phrase, res.length))
     data = await readBody(res)
-    print(data)
+    print(data.decode('utf8'))

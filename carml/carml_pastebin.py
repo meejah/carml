@@ -3,6 +3,8 @@ import sys
 import time
 import functools
 from os import mkdir
+from tempfile import mkdtemp
+from shutil import rmtree
 
 import zope.interface
 from twisted.python import usage, log
@@ -104,13 +106,13 @@ def _progress(percent, tag, message):
 
 async def run(reactor, cfg, tor, dry_run, once, file, count, keys):
 
-    to_share = file.read()
+    to_share = file.read().encode('utf8')
     file.close()
 
     # stealth auth. keys
     authenticators = []
     if keys:
-        for x in xrange(keys):
+        for x in range(keys):
             authenticators.append('carml_%d' % x)
 
     if len(authenticators):
@@ -130,17 +132,24 @@ async def run(reactor, cfg, tor, dry_run, once, file, count, keys):
     if not authenticators:
         ep = tor.create_onion_endpoint(80, version=3)
     else:
-        #mkdir('./foo')
+        authdir = mkdtemp()
+        print("created: {}".format(authdir))
+
+        def delete():
+            print("deleting: {}".format(authdir))
+            rmtree(authdir)
+        reactor.addSystemEventTrigger('before', 'shutdown', delete)
+
         ep = tor.create_filesystem_authenticated_onion_endpoint(
             80,
             version=2,
-            hs_dir='./foo',
+            hs_dir=authdir,
             auth=AuthStealth(authenticators),
         )
 
     root = Resource()
     data = Data(to_share, 'text/plain')
-    root.putChild('', data)
+    root.putChild(b'', data)
 
     if once:
         count = 1
@@ -172,12 +181,12 @@ async def run(reactor, cfg, tor, dry_run, once, file, count, keys):
         print("the following string as an endpoint:")
         print("")
         for client in clients:
-            print("  tor:%s:authCookie=%s" % (client[0], client[1]))
+            print("  tor:%s:authCookie=%s" % (client.hostname, client.auth_token))
         print("")
         print("For example, using carml:")
         print("")
         for client in clients:
-            print("  carml copybin --service tor:%s:authCookie=%s" % (client[0], client[1]))
+            print("  carml copybin --service tor:%s:authCookie=%s" % (client.hostname, client.auth_token))
 
     else:
         print("People using Tor Browser Bundle can find your paste at (once the descriptor uploads):")
@@ -186,8 +195,8 @@ async def run(reactor, cfg, tor, dry_run, once, file, count, keys):
         print("   torsocks curl -o data.asc http://{0}\n".format(host.onion_uri))
         if not count:
             print("Type Control-C to stop serving and shut down the Tor we launched.")
-        print("If you wish to keep the hidden-service keys, they're in (until we shut down):")
-        print(ep.hidden_service_dir)
+        print("The private key is:")
+        print(onion.private_key)
 
     reactor.addSystemEventTrigger('before', 'shutdown',
                                   lambda: print(util.colors.red('Shutting down.')))
