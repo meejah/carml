@@ -4,6 +4,13 @@ Releases
 master
 ------
 
+18.3.0
+------
+
+ * October 23, 2018
+ * fix a few Python3 issues
+ * OnionOO changed a few result tags
+
 18.2.0
 ------
 
