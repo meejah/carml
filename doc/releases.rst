@@ -10,6 +10,9 @@ master
  * October 23, 2018
  * fix a few Python3 issues
  * OnionOO changed a few result tags
+ * :ref:`onion` can accept + output private-keys
+ * fix bug with `carml onion` not accepting single-port `--port` correctly
+
 
 18.2.0
 ------
