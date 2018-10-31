@@ -108,8 +108,14 @@ class Config(object):
     default='auto',
     help='Colourize output using ANSI commands.',
 )
+@click.option(
+    '--json',
+    default=None,
+    help="Provide JSON output. Not compatible with all commands.",
+    is_flag=True,
+)
 @click.pass_context
-def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, password, connect, color):
+def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, password, connect, color, json):
     if (color == 'always' and no_color) or \
        (color == 'no' and no_color is True):
         raise click.UsageError(
@@ -128,6 +134,7 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
     cfg.connect = connect
     cfg.color = color
     cfg.debug_protocol = debug_protocol
+    cfg.json = True if json else False
 
     # start logging
     _log_observer = LogObserver()
@@ -211,12 +218,21 @@ def _run_command(cmd, cfg, *args, **kwargs):
     sys.exit(codes[0])
 
 
+def _no_json(cfg):
+    """
+    Internal helper, marking this command as not allowing --json
+    """
+    if cfg.json:
+        raise click.Abort("Doesn't accept --json flag")
+
+
 @carml.command()
 @click.pass_obj
 def readme(cfg):
     """
     Show the README.rst
     """
+    _no_json(cfg)
     return _run_command(
         carml_readme.run,
         cfg,
@@ -239,6 +255,7 @@ def check_pypi(cfg, package, revision):
     """
     Check a PyPI package hash across multiple circuits.
     """
+    _no_json(cfg)
     return _run_command(
         carml_check_pypi.run,
         cfg, package, revision,
@@ -280,6 +297,7 @@ def circ(cfg, if_unused, verbose, list, build, delete):
     """
     Manipulate Tor circuits.
     """
+    _no_json(cfg)
     if len([o for o in [list, build, delete] if o]) != 1:
         raise click.UsageError(
             "Specify just one of --list, --build or --delete"
@@ -301,6 +319,7 @@ def cmd(cfg, command_args):
     Run the rest of the args as a Tor control command. For example
     "GETCONF SocksPort" or "GETINFO net/listeners/socks".
     """
+    _no_json(cfg)
     return _run_command(
         carml_cmd.run,
         cfg, command_args,
@@ -337,6 +356,7 @@ def events(cfg, list, once, show_event, count, events):
     """
     Follow any Tor events, listed as positional arguments.
     """
+    _no_json(cfg)
     if len(events) < 1 and not list:
         raise click.UsageError(
             "Must specify at least one event"
@@ -381,6 +401,7 @@ def stream(ctx, list, follow, attach, close, verbose):
     Manipulate Tor streams.
     """
     cfg = ctx.obj
+    _no_json(cfg)
     if len([x for x in [list, follow, attach, close] if x]) != 1:
         click.echo(ctx.get_help())
         raise click.UsageError(
@@ -436,6 +457,7 @@ def monitor(ctx, verbose, no_guards, no_addr, no_circuits, no_streams, once, log
     address-maps and event monitoring.
     """
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_monitor.run,
         cfg, verbose, no_guards, no_addr, no_circuits, no_streams, once, log_level,
@@ -450,6 +472,7 @@ def newid(ctx):
     acknowledgement.
     """
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_newid.run,
         cfg,
@@ -500,6 +523,7 @@ def pastebin(ctx, dry_run, once, file, count, keys):
         )
 
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_pastebin.run,
         cfg, dry_run, once, file, count, keys,
@@ -546,6 +570,7 @@ def relay(ctx, list, info, await, info_file):
         infos = [info] if info else []
 
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_relay.run,
         cfg, list, infos, await,
@@ -600,6 +625,7 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
             )
 
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_tbb.run,
         cfg, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch,
@@ -710,6 +736,7 @@ def tmux(ctx):
         set -g status-interval 2
     """
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_tmux.run,
         cfg,
@@ -749,6 +776,7 @@ def xplanet(ctx, all, execute, follow, arc_file, file):
     """
     """
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_xplanet.run,
         cfg, all, execute, follow, arc_file, file,
@@ -787,6 +815,7 @@ def graph(ctx, max):
     A nice coloured console bandwidth-graph.
     """
     cfg = ctx.obj
+    _no_json(cfg)
     return _run_command(
         carml_graph.run,
         cfg, max,
@@ -802,6 +831,7 @@ def help(ctx, what):
     """
     Print help on sub-commands (like "carml help events").
     """
+    _no_json(ctx.obj)
     try:
         cmd = globals()[what]
     except KeyError:
