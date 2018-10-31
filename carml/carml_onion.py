@@ -20,7 +20,7 @@ import txtorcon
 from txtorcon import TCPHiddenServiceEndpoint
 
 
-async def run(reactor, cfg, tor, ports, version, private_key, show_private_key):
+async def run(reactor, cfg, tor, ports, version, private_key, show_private_key, detach):
 
     def fix_port(p):
         """
@@ -47,6 +47,7 @@ async def run(reactor, cfg, tor, ports, version, private_key, show_private_key):
         progress=update,
         await_all_uploads=True,
         private_key=private_key,
+        detach=detach,
     )
     if not cfg.json:
         print("published to all HSDirs")
@@ -98,3 +99,7 @@ async def run(reactor, cfg, tor, ports, version, private_key, show_private_key):
 
     if cfg.json:
         print(json.dumps(js, indent=4))
+
+    if not detach:
+        # we never callback() on this, so we serve forever
+        await Deferred()

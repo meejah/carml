@@ -654,8 +654,17 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
     default=None,
     is_flag=True,
 )
+@click.option(
+    '--detach',
+    help=('Normally, the Onion service will be removed when this command exits;'
+          ' this causes the command to exit when the service is up -- but the'
+          ' service will remain until Tor itself restarts.'
+    ),
+    default=None,
+    is_flag=True,
+)
 @click.pass_context
-def onion(ctx, port, onion_version, private_key, show_private_key):
+def onion(ctx, port, onion_version, private_key, show_private_key, detach):
     """
     Add a temporary onion-service to the Tor we connect to.
 
@@ -719,6 +728,7 @@ def onion(ctx, port, onion_version, private_key, show_private_key):
         onion_version,
         private_key,
         show_private_key,
+        detach,
     )
 
 
