@@ -609,7 +609,7 @@ def tbb(ctx, beta, alpha, use_clearnet, system_keychain, no_extract, no_launch):
 @carml.command()
 @click.option(
     '--port', '-p',
-    help='Port to pass-through (or "remote:local" for different local port)',
+    help='Port to pass-through (or "remote:local" for different local port). Accepted multiple times.',
     multiple=True,
 )
 @click.option(
