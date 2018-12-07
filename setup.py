@@ -8,6 +8,10 @@ from setuptools import setup, find_packages
 __version__ = '18.4.0'
 
 
+with open('requirements-pinned.txt', 'r') as f:
+    requires = f.readlines()
+
+
 setup(
     name='carml',
     version=__version__,
@@ -18,14 +22,7 @@ setup(
     description='A command-line tool to query and control a running Tor. Based on txtorcon + Twisted.',
     long_description=open('README.rst', 'r').read(),
     keywords=['python', 'twisted', 'tor', 'command-line', 'cli'],
-    install_requires=[
-        'humanize',
-        'ansicolors',
-        'backports.lzma',
-        'txtorcon>=18.3.0',
-        'pyasn1',
-        'click>=6.7',
-    ],
+    install_requires=requires,
     classifiers=[
         'Framework :: Twisted',
         'Development Status :: 4 - Beta',

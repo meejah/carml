@@ -6,6 +6,20 @@ venv:
 	./venv/bin/pip install -U pip
 	./venv/bin/pip install --editable .
 
+
+clean:
+	rm -rf vers
+
+# call this in a fresh virtualenv to update our frozen requirements.txt!
+freeze: clean
+	pip install -U virtualenv
+	virtualenv vers
+	vers/bin/pip install -r requirements-min.txt
+	vers/bin/pip freeze --all | grep -v -e "wheel" -e "pip" -e "distribute" > requirements-pinned.txt
+	vers/bin/pip install hashin
+	-rm requirements.txt
+	cat requirements-pinned.txt | xargs vers/bin/hashin > requirements.txt
+
 doc:
 	cd doc && make html
 

@@ -1,0 +1,4 @@
+humanize
+ansicolors
+txtorcon>=18.3.0
+click>=6.7
