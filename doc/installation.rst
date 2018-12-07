@@ -20,9 +20,35 @@ system packages:
 
 .. sourcecode:: shell-session
 
-    virtualenv venv
-    . ./venv/bin/activate
+    python3 -m venv venv
+    source ./venv/bin/activate
     pip install carml
+
+
+Signatures
+==========
+
+If you would like to check the signatures and dependencies, you will
+need to:
+
+ - download the ``.whl`` file from PyPI.
+ - change the URL to download the signature (add ``.asc`` to the end)
+ - confirm signature: ``gpg --verify carml-18.4.0-py3-none-any.whl.asc``
+ - clone source code: ``git clone https://github.com/meejah/carml``
+ - ``git tag --verify v18.4.0``
+ - ``git checkout v18.4.0``
+ - The file ``requirements.txt`` has hashes for all dependencies, at
+   the same versions as pinned in the wheel (and is included in the
+   signature just checked on the tag). So install the dependencies:
+ - ``pip install --require-hashes --requirements requirements.txt``
+ - Then, install the wheel file (and just that):
+ - ``pip install --no-deps carml-18.4.0-py3-none-any.whl``
+
+You now have exactly the bytes I intended to release for both
+``carml`` itself and all its dependencies.
+
+Note: a much easier and arguably better way to get this on Debian or
+Ubuntu would be for someone to package it in Debian...
 
 
 Development/Source
