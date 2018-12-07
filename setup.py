@@ -22,7 +22,7 @@ setup(
         'humanize',
         'ansicolors',
         'backports.lzma',
-        'txtorcon>=18.1.0',
+        'txtorcon>=18.3.0',
         'pyasn1',
         'click>=6.7',
     ],
