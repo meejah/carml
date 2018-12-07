@@ -5,7 +5,7 @@ Note (for PyPI or development installs) you'll need to install
 ``libffi`` and ``liblzma`` development libraries. How to do this on
 various architectures (please send missing ones!):
 
- * Debian + Ubuntu: ``apt-get install build-essential python-dev python-virtualenv libffi-dev liblzma-dev``.
+ * Debian + Ubuntu: ``apt-get install build-essential python3-dev python3-virtualenv libffi-dev liblzma-dev``.
 
 
 PyPI
