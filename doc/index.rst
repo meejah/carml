@@ -6,7 +6,7 @@
 
 .. note:: This code is intended as utilities mostly to help developers
           and Tor experts interact with their systems. Nobody has
-          audited it for anonymitiy leaks (or worse). Use at your own
+          audited it for anonymity leaks (or worse). Use at your own
           risk.
 
 
