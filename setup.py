@@ -21,6 +21,7 @@ setup(
     license='Public Domain (http://unlicense.org/)',
     description='A command-line tool to query and control a running Tor. Based on txtorcon + Twisted.',
     long_description=open('README.rst', 'r').read(),
+##    long_description_type='rst',
     keywords=['python', 'twisted', 'tor', 'command-line', 'cli'],
     install_requires=requires,
     classifiers=[
