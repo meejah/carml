@@ -15,8 +15,8 @@ Once you have libraries installed as above, you should be able to do a
 simple ``pip install carml``. It's also possible to point to the
 ``.whl`` file (e.g. after signature verification).
 
-It is recommended to use ``virtualenv`` to try without affecting
-system packages:
+It is recommended to use ``virtualenv`` to use ``carml`` without
+affecting system packages:
 
 .. sourcecode:: shell-session
 
