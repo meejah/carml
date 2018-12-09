@@ -1,6 +1,8 @@
 Installing carml
 ----------------
 
+``carml`` uses Python3.
+
 Note (for PyPI or development installs) you'll need to install
 ``libffi`` and ``liblzma`` development libraries. How to do this on
 various architectures (please send missing ones!):
