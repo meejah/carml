@@ -22,7 +22,7 @@ system packages:
 
     python3 -m venv venv
     source ./venv/bin/activate
-    pip install carml
+    python3 -m pip install carml
 
 
 Signatures
@@ -40,9 +40,9 @@ need to:
  - The file ``requirements.txt`` has hashes for all dependencies, at
    the same versions as pinned in the wheel (and is included in the
    signature just checked on the tag). So install the dependencies:
- - ``pip install --require-hashes --requirements requirements.txt``
+ - ``python3 -m pip install --require-hashes --requirements requirements.txt``
  - Then, install the wheel file (and just that):
- - ``pip install --no-deps carml-18.4.0-py3-none-any.whl``
+ - ``python3 -m pip install --no-deps carml-18.4.0-py3-none-any.whl``
 
 You now have exactly the bytes I intended to release for both
 ``carml`` itself and all its dependencies.
@@ -56,7 +56,7 @@ Development/Source
 
 From a fresh clone (``git clone https://github.com/meejah/carml.git``)
 type ``make venv``. Then activate your new virtualenv with ``source
-./venv/bin/activate`` and then ``pip install --editable .`` which
+./venv/bin/activate`` and then ``python3 -m pip install --editable .`` which
 should install all the dependencies (listed in ``requirements.txt``).
 
 To do this and use ``peep``, you need pip version 6.1.1. So, you you
@@ -65,9 +65,9 @@ can try something like this (from the root of a fresh clone):
 .. sourcecode:: shell-session
 
    virtualenv venv
-   . ./venv/bin/activate
-   pip install --upgrade pip setuptools  # esp. for Debian
-   pip install --editable .
+   source ./venv/bin/activate
+   python3 -m pip install --upgrade pip setuptools  # esp. for Debian
+   python3 -m pip install --editable .
 
 Dependencies:
 
