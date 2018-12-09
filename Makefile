@@ -24,7 +24,7 @@ freeze: clean
 doc:
 	cd doc && make html
 
-release: dist dist-sigs
+release: tag dist dist-sigs
 release-upload:
 	twine upload -r pypi -c "carml v${VERSION} tarball" dist/carml-${VERSION}.tar.gz dist/carml-${VERSION}.tar.gz.asc
 	twine upload -r pypi -c "carml v${VERSION} wheel" dist/carml-${VERSION}-py3-none-any.whl dist/carml-${VERSION}-py3-none-any.whl.asc
