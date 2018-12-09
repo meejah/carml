@@ -8,8 +8,14 @@ from setuptools import setup, find_packages
 __version__ = '18.4.0'
 
 
-with open('requirements-pinned.txt', 'r') as f:
-    requires = f.readlines()
+if True:
+    with open('requirements-pinned.txt', 'r') as f:
+        requires = f.readlines()
+else:
+    # you may like to do this for local / dev usage to get latest
+    # versions, etc.
+    with open('requirements-min.txt', 'r') as f:
+        requires = f.readlines()
 
 
 setup(
