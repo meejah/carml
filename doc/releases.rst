@@ -4,6 +4,10 @@ Releases
 master
 ------
 
+
+18.4.0
+------
+
  * `--detach` option for `carml onion`
  * `--json` option for `carml onion`
 
