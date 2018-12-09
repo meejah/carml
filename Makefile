@@ -19,6 +19,7 @@ freeze: clean
 	vers/bin/pip install hashin
 	-rm requirements.txt
 	cat requirements-pinned.txt | xargs vers/bin/hashin > requirements.txt
+	git diff
 
 doc:
 	cd doc && make html
