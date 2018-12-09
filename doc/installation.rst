@@ -40,7 +40,7 @@ need to:
  - The file ``requirements.txt`` has hashes for all dependencies, at
    the same versions as pinned in the wheel (and is included in the
    signature just checked on the tag). So install the dependencies:
- - ``python3 -m pip install --require-hashes --requirements requirements.txt``
+ - ``python3 -m pip install --require-hashes --no-deps --requirements requirements.txt``
  - Then, install the wheel file (and just that):
  - ``python3 -m pip install --no-deps carml-18.4.0-py3-none-any.whl``
 
@@ -59,9 +59,6 @@ type ``make venv``. Then activate your new virtualenv with ``source
 ./venv/bin/activate`` and then ``python3 -m pip install --editable .`` which
 should install all the dependencies (listed in ``requirements.txt``).
 
-To do this and use ``peep``, you need pip version 6.1.1. So, you you
-can try something like this (from the root of a fresh clone):
-
 .. sourcecode:: shell-session
 
    virtualenv venv
@@ -74,16 +71,14 @@ Dependencies:
  * `txtorcon <https://txtorcon.readthedocs.org>`_
  * `humanize <https://github.com/jmoiron/humanize>`_
  * `ansicolors <https://github.com/verigak/colors/>`_
- * `PyOpenSSL <https://github.com/pyca/pyopenssl>`_
- * `txsocksx <https://github.com/habnabit/txsocksx>`_
- * `backports.lzma <https://github.com/peterjc/backports.lzma>`_
+ * `Click <https://click.palletsprojects.com/>`_
 
 
 Tor Setup
 ---------
 
 For Tor setup, make sure you have at least the following in
-``/etc/tor/torrc``:
+``/etc/tor/torrc`` (or whatever you're using for config):
 
 .. code-block:: linux-config
 
@@ -92,7 +87,7 @@ For Tor setup, make sure you have at least the following in
     ControlPort 9051
     # corresponding carml option: "--connect tcp:127.0.0.1:9051"
 
-Or, if you prefer Unix sockets (recommended):
+Or, if you prefer Unix sockets (**recommended** where possible):
 
 .. code-block:: linux-config
 
