@@ -51,6 +51,26 @@ Note: a much easier and arguably better way to get this on Debian or
 Ubuntu would be for someone to package it in Debian...
 
 
+Debian/Ubuntu
+-------------
+
+Installing on Debian/Ubuntu in a secure manner is a little easier. Use
+``apt`` to install all the required python packages:
+
+.. sourcecode:: shell-session
+
+    sudo apt install python3-humanize python3-click python-txtorcon
+
+You can now create a virtualenv that can "see" those packages:
+
+.. sourcecode:: shell-session
+
+    python3 -m venv --system-site-packages venv
+    source venv/bin/activate
+    python3 -m pip install --no-deps carml-18.4.0-py3-none-any.whl
+    python3 -m carml --help
+
+
 Development/Source
 ==================
 
