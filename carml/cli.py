@@ -144,7 +144,7 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
 def _run_command(cmd, cfg, *args, **kwargs):
 
     async def _startup(reactor):
-        if cfg.connect.startswith('tcp:'):
+        if cfg.connect.startswith('tcp:') or cfg.connect.startswith('unix:'):
             ep = clientFromString(reactor, cfg.connect)
         else:
             if ':' in cfg.connect:
