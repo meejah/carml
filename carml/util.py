@@ -5,9 +5,6 @@ Probably some of these could be replaced by a library or two,
 especially the progress-bar hackery. The colour stuff is also a little
 wonky.
 '''
-
-from __future__ import print_function
-
 import datetime
 import functools
 from six import unichr

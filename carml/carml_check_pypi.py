@@ -1,8 +1,6 @@
 # check Python Package Index (PyPI) over 3 different circuits and
 # compare sha256 hashes. suitable for use in requirements.txt with
 # "twine"
-from __future__ import print_function
-
 from zope.interface import implementer
 from twisted.python import usage
 from twisted.plugin import IPlugin
