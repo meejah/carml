@@ -553,11 +553,11 @@ def pastebin(ctx, dry_run, once, file, count, keys):
     help='Monitor NEWCONSENSUS for a fingerprint to exist',
 )
 @click.pass_context
-def relay(ctx, list, info, await, info_file):
+def relay(ctx, list, info, awaiting, info_file):
     """
     Information about Tor relays.
     """
-    if not list and not info and not await and not info_file:
+    if not list and not info and not awaiting and not info_file:
         raise click.UsageError(
             "Require one of --list, --info, --await, --info-file"
         )
@@ -573,7 +573,7 @@ def relay(ctx, list, info, await, info_file):
     _no_json(cfg)
     return _run_command(
         carml_relay.run,
-        cfg, list, infos, await,
+        cfg, list, infos, awaiting,
     )
 
 
