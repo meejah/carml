@@ -1,9 +1,6 @@
 #
 # FIXME: better name? "the command called cmd" is pretty weird
 #
-
-from __future__ import print_function
-
 import os
 import sys
 import functools
