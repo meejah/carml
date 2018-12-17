@@ -546,7 +546,7 @@ def pastebin(ctx, dry_run, once, file, count, keys):
     help='Look up multiple fingerprints, one per line from the given file',
 )
 @click.option(
-    '--awaiting',
+    '--await', 'awaiting',
     default='',
     help='Monitor NEWCONSENSUS for a fingerprint to exist',
 )
@@ -557,7 +557,7 @@ def relay(ctx, list, info, awaiting, info_file):
     """
     if not list and not info and not awaiting and not info_file:
         raise click.UsageError(
-            "Require one of --list, --info, --awaiting, --info-file"
+            "Require one of --list, --info, --await, --info-file"
         )
     if info_file:
         infos = [info] if info else []
