@@ -112,7 +112,6 @@ html_sidebars = {
        'about.html', 'navigation.html', 'searchbox.html', 'donate.html',
    ]
 }
-print("DING", alabaster)
 html_theme_options = {
     'logo': 'logo.svg',
     'github_button': 'false',
