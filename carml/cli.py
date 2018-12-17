@@ -546,7 +546,7 @@ def pastebin(ctx, dry_run, once, file, count, keys):
     help='Look up multiple fingerprints, one per line from the given file',
 )
 @click.option(
-    '--await',
+    '--await', 'awaiting',
     default='',
     help='Monitor NEWCONSENSUS for a fingerprint to exist',
 )
