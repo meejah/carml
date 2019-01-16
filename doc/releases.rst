@@ -4,6 +4,9 @@ Releases
 master
 ------
 
+19.0.0
+------
+
  * thanks to `rprimus <https://github.com/rprimus>`_ several cleanups:
  * remove `__future__` imports we don't need any longer
  * fix use of `await` as a variable name
