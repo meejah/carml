@@ -1,4 +1,4 @@
 humanize
 ansicolors
-txtorcon>=18.3.0
+txtorcon>=19.0.0
 click>=6.7
