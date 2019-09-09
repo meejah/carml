@@ -21,7 +21,7 @@ from twisted.plugin import IPlugin
 from twisted.internet import reactor, defer, ssl, endpoints, error
 from twisted.internet._sslverify import PublicKey
 from twisted.internet.protocol import Protocol
-from twisted.web.client import Agent, ProxyAgent, RedirectAgent, ResponseDone, ResponseFailed
+from twisted.web.client import Agent, ProxyAgent, ResponseDone, ResponseFailed
 from twisted.web.iweb import IPolicyForHTTPS
 from twisted.web.http_headers import Headers
 
@@ -202,13 +202,13 @@ class ResponseReceiver(Protocol):
 
 async def download(agent, uri, filelike):
     resp = await agent.request(b'GET', uri)
-    while resp.code == 302:
+    while resp.code in [301, 302]:
         newloc = resp.headers.getRawHeaders('location')[0]
         print("Following 302:", newloc)
         resp = await agent.request(b'GET', newloc.encode('ascii'))
 
     if resp.code != 200:
-        raise RuntimeError('Failed to download "{}": {}'.format(uri, resp.code))
+        raise RuntimeError('Failed to download "{}": {}'.format(uri.decode('ascii'), resp.code))
     done = defer.Deferred()
     total = resp.length
     dl = ResponseReceiver(filelike, total, done)
@@ -286,8 +286,8 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
     try:
         await download(agent, uri, data)
     except Exception as e:
-        if hasattr(value, 'reasons'):
-            msg = ''.join([str(r.value.args[-1]) for r in fail.value.reasons])
+        if hasattr(e, 'reasons'):
+            msg = ''.join([str(r.args[-1]) for r in e.reasons])
             raise RuntimeError(msg)
         raise
 
