@@ -4,6 +4,14 @@ Releases
 master
 ------
 
+19.1.0
+------
+
+ * September 10, 2019
+ * bump dependency versions
+ * follow 301 and 302 when downloading Tor Browser
+
+
 19.0.0
 ------
 
