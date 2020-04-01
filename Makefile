@@ -2,7 +2,7 @@
 VERSION = 19.0.0
 
 venv:
-	virtualenv venv
+	virtualenv --python /opt/python-3.8.1/bin/python3 venv
 	./venv/bin/pip install -U pip
 	./venv/bin/pip install --editable .
 

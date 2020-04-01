@@ -1,4 +1,5 @@
 humanize
 ansicolors
-txtorcon>=19.0.0
+txtorcon>=20.0.0
 click>=6.7
+twisted[tls]

@@ -4,6 +4,13 @@ Releases
 master
 ------
 
+20.0.0
+------
+
+ * April 1, 2020
+ * bump dependencies
+
+
 19.0.0
 ------
 
