@@ -283,17 +283,20 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
         agent = Agent(reactor, contextFactory=cf)
 
     else:
-        agent = tor.web_agent()
+        agent = BrowserLikeRedirectAgent(
+            tor.web_agent()
+        )
 
     # see onion.torproject.org to verify this is "www.torproject.org" equiv
     uri = b'http://expyuzz4wqqyqhjn.onion/projects/torbrowser/RecommendedTBBVersions'
+    uri = b'http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion/projects/torbrowser/RecommendedTBBVersions'
     data = BytesIO()
     print(u'Getting recommended versions from "{}".'.format(uri.decode('ascii')))
 
     try:
         await download(agent, uri, data)
     except Exception as e:
-        if hasattr(value, 'reasons'):
+        if hasattr(e, 'reasons'):
             msg = ''.join([str(r.value.args[-1]) for r in fail.value.reasons])
             raise RuntimeError(msg)
         raise
