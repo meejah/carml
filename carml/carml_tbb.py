@@ -21,7 +21,14 @@ from twisted.plugin import IPlugin
 from twisted.internet import reactor, defer, ssl, endpoints, error
 from twisted.internet._sslverify import PublicKey
 from twisted.internet.protocol import Protocol
-from twisted.web.client import Agent, ProxyAgent, RedirectAgent, ResponseDone, ResponseFailed
+from twisted.web.client import (
+    Agent,
+    ProxyAgent,
+    RedirectAgent,
+    ResponseDone,
+    ResponseFailed,
+    BrowserLikeRedirectAgent,
+)
 from twisted.web.iweb import IPolicyForHTTPS
 from twisted.web.http_headers import Headers
 
