@@ -215,7 +215,7 @@ async def download(agent, uri, filelike):
         resp = await agent.request(b'GET', newloc.encode('ascii'))
 
     if resp.code != 200:
-        raise RuntimeError('Failed to download "{}": {}'.format(uri, resp.code))
+        raise RuntimeError('Failed to download "{}": {}'.format(str(uri, 'utf8'), resp.code))
     done = defer.Deferred()
     total = resp.length
     dl = ResponseReceiver(filelike, total, done)
