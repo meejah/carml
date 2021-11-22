@@ -366,7 +366,8 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
         # uri = u'http://expyuzz4wqqyqhjn.onion/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
 
         # see onion.torproject.org to verify this is "dist.torproject.org" equiv
-        uri = u'http://rqef5a5mebgq46y5.onion/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
+        # (or ask #tor for more confirmation of a different .onion address)
+        uri = u'http://scpalcwstkydpa3y7dbpkjs2dtr7zvtvdbyj3dqwkucfrwyixcl5ptqd.onion/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
         if os.path.exists(to_download):
             print(util.colors.red(to_download) + ': already exists, so not downloading.')
         else:
