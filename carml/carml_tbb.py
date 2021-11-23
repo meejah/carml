@@ -21,7 +21,14 @@ from twisted.plugin import IPlugin
 from twisted.internet import reactor, defer, ssl, endpoints, error
 from twisted.internet._sslverify import PublicKey
 from twisted.internet.protocol import Protocol
-from twisted.web.client import Agent, ProxyAgent, RedirectAgent, ResponseDone, ResponseFailed
+from twisted.web.client import (
+    Agent,
+    ProxyAgent,
+    RedirectAgent,
+    ResponseDone,
+    ResponseFailed,
+    BrowserLikeRedirectAgent,
+)
 from twisted.web.iweb import IPolicyForHTTPS
 from twisted.web.http_headers import Headers
 
@@ -208,7 +215,7 @@ async def download(agent, uri, filelike):
         resp = await agent.request(b'GET', newloc.encode('ascii'))
 
     if resp.code != 200:
-        raise RuntimeError('Failed to download "{}": {}'.format(uri, resp.code))
+        raise RuntimeError('Failed to download "{}": {}'.format(str(uri, 'utf8'), resp.code))
     done = defer.Deferred()
     total = resp.length
     dl = ResponseReceiver(filelike, total, done)
@@ -276,17 +283,20 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
         agent = Agent(reactor, contextFactory=cf)
 
     else:
-        agent = tor.web_agent()
+        agent = BrowserLikeRedirectAgent(
+            tor.web_agent()
+        )
 
     # see onion.torproject.org to verify this is "www.torproject.org" equiv
     uri = b'http://expyuzz4wqqyqhjn.onion/projects/torbrowser/RecommendedTBBVersions'
+    uri = b'http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion/projects/torbrowser/RecommendedTBBVersions'
     data = BytesIO()
     print(u'Getting recommended versions from "{}".'.format(uri.decode('ascii')))
 
     try:
         await download(agent, uri, data)
     except Exception as e:
-        if hasattr(value, 'reasons'):
+        if hasattr(e, 'reasons'):
             msg = ''.join([str(r.value.args[-1]) for r in fail.value.reasons])
             raise RuntimeError(msg)
         raise
@@ -356,7 +366,8 @@ async def run(reactor, cfg, tor, beta, alpha, use_clearnet, system_keychain, no_
         # uri = u'http://expyuzz4wqqyqhjn.onion/dist/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
 
         # see onion.torproject.org to verify this is "dist.torproject.org" equiv
-        uri = u'http://rqef5a5mebgq46y5.onion/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
+        # (or ask #tor for more confirmation of a different .onion address)
+        uri = u'http://scpalcwstkydpa3y7dbpkjs2dtr7zvtvdbyj3dqwkucfrwyixcl5ptqd.onion/torbrowser/{}/{}'.format(target_version, to_download).encode('ascii')
         if os.path.exists(to_download):
             print(util.colors.red(to_download) + ': already exists, so not downloading.')
         else:

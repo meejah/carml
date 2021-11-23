@@ -4,6 +4,14 @@ Releases
 master
 ------
 
+21.0.0
+------
+
+ * November 23, 2021
+ * bump dependencies
+ * let txtorcon guess connection
+
+
 20.0.0
 ------
 
