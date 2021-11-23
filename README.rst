@@ -65,15 +65,15 @@ Some Quick Examples
     Mon Jul 21 13:54:38 2014: Serving request to User-Agent "curl/7.37.0".
     Shutting down.
     (venv3)meejah@machine:~$ carml tbb
-    Getting recommended versions from "http://expyuzz4wqqyqhjn.onion/projects/torbrowser/RecommendedTBBVersions".
+    Getting recommended versions from "http://2gzyxa5ihm7nsggfxnu52rck2vv4rvmdlkiu3zzui5du4xyclen53wid.onion/projects/torbrowser/RecommendedTBBVersions".
        7.5.5, 7.5.5-MacOS, 7.5.5-Linux, 7.5.5-Windows, 7.5.6, 7.5.6-MacOS,
        7.5.6-Linux, 7.5.6-Windows, 8.0a8, 8.0a8-MacOS, 8.0a8-Linux,
        8.0a8-Windows, 8.0a9, 8.0a9-MacOS, 8.0a9-Linux, 8.0a9-Windows
     Note: there are alpha versions available; use --alpha to download.
     Downloading "tor-browser-linux64-7.5.5_en-US.tar.xz.asc" from:
-       http://rqef5a5mebgq46y5.onion/torbrowser/7.5.5/tor-browser-linux64-7.5.5_en-US.tar.xz.asc
+        http://scpalcwstkydpa3y7dbpkjs2dtr7zvtvdbyj3dqwkucfrwyixcl5ptqd.onion/torbrowser/7.5.5/tor-browser-linux64-7.5.5_en-US.tar.xz.asc
     Downloading "tor-browser-linux64-7.5.5_en-US.tar.xz" from:
-       http://rqef5a5mebgq46y5.onion/torbrowser/7.5.5/tor-browser-linux64-7.5.5_en-US.tar.xz
+        http://scpalcwstkydpa3y7dbpkjs2dtr7zvtvdbyj3dqwkucfrwyixcl5ptqd.onion/torbrowser/7.5.5/tor-browser-linux64-7.5.5_en-US.tar.xz
     [▏    ] - 0.0 of 65.8 MiB (1s remaining)
     [▋    ] - 6.6 of 65.8 MiB (153s remaining)
     [█▏   ] - 13.2 of 65.8 MiB (137s remaining)
