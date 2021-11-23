@@ -94,7 +94,7 @@ class Config(object):
 )
 @click.option(
     '--connect', '-c',
-    default='tcp:host=127.0.0.1:port=9051',
+    default=None,
     help=('Where to connect to Tor. This accepts any Twisted client endpoint '
           'string, or an ip:port pair. Examples: "tcp:localhost:9151" or '
           '"unix:/var/run/tor/control".'),
@@ -142,7 +142,9 @@ def carml(ctx, timestamps, no_color, info, quiet, debug, debug_protocol, passwor
 def _run_command(cmd, cfg, *args, **kwargs):
 
     async def _startup(reactor):
-        if cfg.connect.startswith('tcp:') or cfg.connect.startswith('unix:'):
+        if cfg.connect is None:
+            ep = None
+        elif cfg.connect.startswith('tcp:') or cfg.connect.startswith('unix:'):
             ep = clientFromString(reactor, cfg.connect)
         else:
             if ':' in cfg.connect:
@@ -150,6 +152,8 @@ def _run_command(cmd, cfg, *args, **kwargs):
             else:
                 ep = clientFromString(reactor, 'tcp:localhost:{}'.format(cfg.connect))
         tor = await txtorcon.connect(reactor, ep)
+        if ep is None:
+            print("Connected via {}".format(str(tor.protocol.transport.addr, "utf8")))
 
         if cfg.debug_protocol:
 
