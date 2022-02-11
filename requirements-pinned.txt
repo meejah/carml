@@ -16,7 +16,7 @@ pyOpenSSL==21.0.0
 service-identity==21.1.0
 setuptools==58.3.0
 six==1.16.0
-Twisted==21.7.0
+Twisted==22.1.0
 txtorcon==21.1.0
 typing_extensions==4.0.0
 zope.interface==5.4.0
