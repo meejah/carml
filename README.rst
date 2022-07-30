@@ -16,7 +16,7 @@ carml
 It is written in Python and uses Tor's control-port via the `txtorcon
 library <https://txtorcon.readthedocs.org>`_.
 
-**Documentation at:** `carml.rtfd.org <https://carml.readthedocs.org/en/latest/>`_ or `carmlion6vt4az2q.onion/ <http://carmlion6vt4az2q.onion/>`_
+**Documentation at:** `carml.rtfd.org <https://carml.readthedocs.org/en/latest/>`_ or `tvflhlyx7o5qsl6a2v6pvzwripzzvzgt32tkhfbys7tj3zrm4faz53yd.onion/ <http://tvflhlyx7o5qsl6a2v6pvzwripzzvzgt32tkhfbys7tj3zrm4faz53yd.onion/>`_
 **Code at:** `github.com/meejah/carml <https://github.com/meejah/carml/>`_
 
 In some ways, ``carml`` started as a dumping-ground for things I
