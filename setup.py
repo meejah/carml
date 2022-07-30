@@ -5,7 +5,7 @@ import re
 from setuptools import setup, find_packages
 
 
-__version__ = '22.7.0'
+__version__ = '22.7.1'
 
 
 if True:
