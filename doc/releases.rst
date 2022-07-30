@@ -4,6 +4,13 @@ Releases
 master
 ------
 
+22.7.0
+------
+
+ * July 29, 2022
+ * bump dependencies
+ * v3 onion services
+
 21.0.0
 ------
 
