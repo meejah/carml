@@ -12,8 +12,7 @@ clean:
 
 # call this in a fresh virtualenv to update our frozen requirements.txt!
 freeze: clean
-	pip install -U virtualenv
-	virtualenv vers
+	python -m venv vers
 	vers/bin/pip install -r requirements-min.txt
 	vers/bin/pip freeze --all | grep -v -e "wheel" -e "pip" -e "distribute" > requirements-pinned.txt
 	vers/bin/pip install hashin
