@@ -1,5 +1,5 @@
 .PHONY: doc certs tag
-VERSION = 22.7.1
+VERSION = 23.11.0
 
 venv:
 	virtualenv --python /opt/python-3.8.1/bin/python3 venv

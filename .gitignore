@@ -3,3 +3,4 @@
 venv
 dropin.cache
 doc/_build
+PRIVATE*
