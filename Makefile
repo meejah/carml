@@ -25,8 +25,8 @@ doc:
 
 release: tag dist dist-sigs
 release-upload:
-	twine upload -r pypi -c "carml v${VERSION} tarball" dist/carml-${VERSION}.tar.gz dist/carml-${VERSION}.tar.gz.asc
-	twine upload -r pypi -c "carml v${VERSION} wheel" dist/carml-${VERSION}-py3-none-any.whl dist/carml-${VERSION}-py3-none-any.whl.asc
+	twine upload --username __token__ --password `cat PRIVATE-release-token` -r pypi -c "carml v${VERSION} tarball" dist/carml-${VERSION}.tar.gz dist/carml-${VERSION}.tar.gz.asc
+	twine upload --username __token__ --password `cat PRIVATE-release-token` -r pypi -c "carml v${VERSION} wheel" dist/carml-${VERSION}-py3-none-any.whl dist/carml-${VERSION}-py3-none-any.whl.asc
 
 tag:
 	git tag | grep v${VERSION} || git tag --sign -u meejah@meejah.ca -m ${VERSION} v${VERSION}
