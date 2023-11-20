@@ -153,7 +153,7 @@ def _run_command(cmd, cfg, *args, **kwargs):
                 ep = clientFromString(reactor, 'tcp:localhost:{}'.format(cfg.connect))
         tor = await txtorcon.connect(reactor, ep)
         if ep is None:
-            print("Connected via {}".format(str(tor.protocol.transport.addr, "utf8")))
+            print("Connected via {}".format(tor.protocol.transport.addr))
 
         if cfg.debug_protocol:
 
