@@ -114,8 +114,7 @@ async def build_circuit(reactor, cfg, tor, routers):
             r = state.routers.get(name) or state.routers.get('$' + name)
             if r is None:
                 if len(name) == 40:
-                    print("Couldn't look up %s, but it looks like an ID" % name)
-                    r = name
+                    raise RuntimeError("Couldn't look up %s (but it looks like an ID)" % name)
                 else:
                     raise RuntimeError('Couldn\'t find router "%s".' % name)
             return r
